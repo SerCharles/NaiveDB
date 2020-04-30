@@ -4,6 +4,9 @@ import cn.edu.thssdb.index.BPlusTree;
 import cn.edu.thssdb.schema.Entry;
 import cn.edu.thssdb.schema.Row;
 
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -71,16 +74,32 @@ public class Cache {
         Page page = pages.get(targetID);
         if (page == null)
             return;
-        if (page.getEdited())
-        {
-            // rewrite to disk
-        }
+        ArrayList<Row> rows = new ArrayList<>();
         ArrayList<Entry> entries = page.getEntries();
         for (Entry entry : entries)
         {
+            rows.add(index.get(entry));
             index.put(entry, page.new EmptyRow(targetID));
         }
+        if (page.getEdited())
+        {
+            // rewrite to disk
+            try {
+                serialize(rows, page.getPageFileName());
+            }
+            catch (IOException e)
+            {
+                return;
+            }
+
+        }
         pages.remove(targetID);
+    }
+
+    private void serialize(ArrayList<Row> rows, String filename) throws IOException {
+        ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(filename));
+        oos.writeObject(rows);
+        oos.close();
     }
 
 }

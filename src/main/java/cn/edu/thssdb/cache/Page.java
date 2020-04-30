@@ -38,6 +38,8 @@ public class Page {
 
     public int getId() { return id; }
 
+    public String getPageFileName() { return pageFileName; }
+
     public void setTimeStamp(long timeStamp) { this.timeStamp = timeStamp; }
     public long getTimeStamp() { return timeStamp; }
 
