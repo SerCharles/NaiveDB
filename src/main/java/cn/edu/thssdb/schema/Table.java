@@ -103,12 +103,56 @@ public class Table implements Iterable<Row> {
         }
     }
 
-    public void delete() {
-        // TODO
+    public void delete(Entry primaryEntry) {
+        if (primaryEntry == null)
+            throw new KeyNotExistException(null);
+
+        try {
+            lock.writeLock().lock();
+            cache.deleteRow(primaryEntry, primaryIndex);
+        }
+        catch (KeyNotExistException e) {
+            throw e;
+        }
+        finally {
+            lock.writeLock().unlock();
+        }
     }
 
-    public void update() {
-        // TODO
+    public void update(Entry primaryEntry, ArrayList<Column> columns, ArrayList<Entry> entries) {
+        if (primaryEntry == null || columns == null || entries == null)
+            throw new KeyNotExistException(null);
+
+        int targetKeys[] = new int[columns.size()];
+        int i = 0;
+        int tableColumnSize = this.columns.size();
+        for (Column column : columns)
+        {
+            boolean isMatched = false;
+            for (int j = 0; j < tableColumnSize; i++)
+            {
+                if (column.equals(this.columns.get(j)))
+                {
+                    targetKeys[i] = j;
+                    isMatched = true;
+                    break;
+                }
+            }
+            if (!isMatched)
+                throw new KeyNotExistException(column.toString());
+            i++;
+        }
+
+        try {
+            lock.writeLock().lock();
+            cache.updateRow(primaryEntry, primaryIndex, targetKeys, entries);
+        }
+        catch (KeyNotExistException e) {
+            throw e;
+        }
+        finally {
+            lock.writeLock().unlock();
+        }
     }
 
     public Row get(Entry entry)
@@ -145,8 +189,10 @@ public class Table implements Iterable<Row> {
 
     private class TableIterator implements Iterator<Row> {
         private Iterator<Pair<Entry, Row>> iterator;
+        private Cache mCache;
 
         TableIterator(Table table) {
+            mCache = table.cache;
             this.iterator = table.cache.getIndexIter();
         }
 
@@ -157,7 +203,9 @@ public class Table implements Iterable<Row> {
 
         @Override
         public Row next() {
-            return iterator.next().getValue();
+            Entry entry = iterator.next().getKey();
+            Row row = mCache.getRow(entry, primaryIndex);
+            return row;
         }
     }
 

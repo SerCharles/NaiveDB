@@ -59,6 +59,72 @@ public class Cache {
         curPage.setTimeStamp();
     }
 
+    public void deleteRow(Entry entry, int primaryKey)
+    {
+        Row row;
+        try {
+            row = index.get(entry);
+        }
+        catch (KeyNotExistException e) {
+            throw new KeyNotExistException(entry.toString());
+        }
+
+        int position = row.getPosition();
+        if (row instanceof EmptyRow)
+        {
+            exchangePage(position, primaryKey);
+            row = index.get(entry);
+        }
+
+        index.remove(entry);
+        Page curPage = pages.get(position);
+        curPage.removeEntry(entry, row.toString().length());
+        curPage.setTimeStamp();
+        curPage.setEdited(true);
+    }
+
+    public void updateRow(Entry primaryEntry, int primaryKey,
+                          int[] targetKeys, ArrayList<Entry> targetEntries)
+    {
+        Row row;
+        try {
+            row = index.get(primaryEntry);
+        }
+        catch (KeyNotExistException e) {
+            throw new KeyNotExistException(primaryEntry.toString());
+        }
+
+        int position = row.getPosition();
+        if (row instanceof EmptyRow)
+        {
+            exchangePage(position, primaryKey);
+            row = index.get(primaryEntry);
+        }
+
+        boolean changePrimaryEntry = false;
+        Entry targetPrimaryEntry = null;
+        int originalLen = row.toString().length();
+        for (int i = 0; i < targetKeys.length; i++)
+        {
+            int key = targetKeys[i];
+            if (key == primaryKey)
+            {
+                changePrimaryEntry = true;
+                targetPrimaryEntry = targetEntries.get(i);
+            }
+            row.getEntries().set(key, targetEntries.get(i));
+        }
+
+        Page curPage = pages.get(position);
+        if (changePrimaryEntry)
+        {
+            curPage.removeEntry(primaryEntry, originalLen);
+            curPage.insertEntry(targetPrimaryEntry, row.toString().length());
+        }
+        curPage.setTimeStamp();
+        curPage.setEdited(true);
+    }
+
     public Row getRow(Entry entry, int primaryKey)
     {
         Row row;

@@ -43,4 +43,10 @@ public class Page {
         size += len;
         entries.add(entry);
     }
+
+    public void removeEntry(Entry entry, int len)
+    {
+        size -= len;
+        entries.remove(entry);
+    }
 }
