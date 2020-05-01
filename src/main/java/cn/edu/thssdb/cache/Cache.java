@@ -1,12 +1,12 @@
 package cn.edu.thssdb.cache;
 
+import cn.edu.thssdb.exception.KeyNotExistException;
 import cn.edu.thssdb.index.BPlusTree;
 import cn.edu.thssdb.schema.Entry;
 import cn.edu.thssdb.schema.Row;
+import javafx.util.Pair;
 
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.ObjectOutputStream;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -27,6 +27,8 @@ public class Cache {
 
     public int getPageNum() { return pageNum; }
 
+    public Iterator<Pair<Entry, Row>> getIndexIter() { return index.iterator(); }
+
     public boolean insertPage(ArrayList<Row> rows, int primaryKey)
     {
         boolean noOverflow = addPage();
@@ -39,6 +41,62 @@ public class Cache {
             curPage.insertEntry(primaryEntry, len);
         }
         return noOverflow;
+    }
+
+    public void insertRow(ArrayList<Entry> entries, int primaryKey)
+    {
+        Row row = new Row(entries.toArray(new Entry[0]));
+        int len = row.toString().length();
+        Entry primaryEntry = entries.get(primaryKey);
+        Page curPage = pages.get(pageNum);
+        if (curPage == null || curPage.getSize() + len > Page.maxSize)
+        {
+            addPage();
+            curPage = pages.get(pageNum);
+        }
+        curPage.insertEntry(primaryEntry, len);
+        curPage.setEdited(true);
+        curPage.setTimeStamp();
+    }
+
+    public Row getRow(Entry entry, int primaryKey)
+    {
+        Row row;
+        try {
+            row = index.get(entry);
+        }
+        catch (KeyNotExistException e) {
+            throw new KeyNotExistException(entry.toString());
+        }
+
+        if (row instanceof EmptyRow)
+        {
+            int position = row.getPosition();
+            exchangePage(position, primaryKey);
+            return index.get(entry);
+        }
+        else
+        {
+            pages.get(row.getPosition()).setTimeStamp();
+            return row;
+        }
+    }
+
+    private void exchangePage(int pageId, int primaryKey)
+    {
+        if (pageNum >= maxPageNum)
+            expelPage();
+
+        Page curPage = new Page(cacheName, pageId);
+        ArrayList<Row> rows = deserialize(new File(curPage.getPageFileName()));
+        for (Row row : rows)
+        {
+            row.setPosition(pageId);
+            Entry primaryEntry = row.getEntries().get(primaryKey);
+            index.put(primaryEntry, row);
+            curPage.insertEntry(primaryEntry, row.toString().length());
+        }
+        pages.put(pageId, curPage);
     }
 
     private boolean addPage()
@@ -79,7 +137,7 @@ public class Cache {
         for (Entry entry : entries)
         {
             rows.add(index.get(entry));
-            index.put(entry, page.new EmptyRow(targetID));
+            index.put(entry, this.new EmptyRow(targetID));
         }
         if (page.getEdited())
         {
@@ -100,6 +158,27 @@ public class Cache {
         ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(filename));
         oos.writeObject(rows);
         oos.close();
+    }
+
+    private ArrayList<Row> deserialize(File file) {
+        ArrayList<Row> rows;
+        try {
+            ObjectInputStream ois = new ObjectInputStream(new FileInputStream(file));
+            rows = (ArrayList<Row>) ois.readObject();
+            ois.close();
+        }
+        catch (Exception e) {
+            rows = null;
+        }
+        return rows;
+    }
+
+    public class EmptyRow extends Row {
+        public EmptyRow(int position)
+        {
+            super();
+            this.position = position;
+        }
     }
 
 }

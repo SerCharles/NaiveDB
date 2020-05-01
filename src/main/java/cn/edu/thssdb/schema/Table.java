@@ -1,6 +1,9 @@
 package cn.edu.thssdb.schema;
 
 import cn.edu.thssdb.cache.Cache;
+import cn.edu.thssdb.exception.KeyNotExistException;
+import cn.edu.thssdb.exception.SchemaLengthMismatchException;
+import cn.edu.thssdb.exception.SchemaMismatchException;
 import cn.edu.thssdb.index.BPlusTree;
 import static cn.edu.thssdb.utils.Global.*;
 import javafx.util.Pair;
@@ -63,8 +66,41 @@ public class Table implements Iterable<Row> {
         }
     }
 
-    public void insert() {
-        // TODO
+    public void insert(ArrayList<Column> columns, ArrayList<Entry> entries) {
+        if (columns == null || entries == null)
+            throw new SchemaLengthMismatchException(this.columns.size(), 0);
+
+        // match columns and reorder entries
+        int schemaLen = this.columns.size();
+        if (columns.size() != schemaLen || entries.size() != schemaLen)
+            throw new SchemaLengthMismatchException(schemaLen, columns.size());
+        ArrayList<Entry> orderedEntries = new ArrayList<>();
+        for (Column column : this.columns)
+        {
+            boolean isMatched = false;
+            for (int i = 0; i < schemaLen; i++)
+            {
+                if (columns.get(i).compareTo(column) != 0)
+                {
+                    orderedEntries.add(entries.get(i));
+                    isMatched = true;
+                    break;
+                }
+            }
+            if (!isMatched)
+            {
+                throw new SchemaMismatchException(column.toString());
+            }
+        }
+
+        // write to cache
+        try {
+            lock.writeLock().lock();
+            cache.insertRow(orderedEntries, primaryIndex);
+        }
+        finally {
+            lock.writeLock().unlock();
+        }
     }
 
     public void delete() {
@@ -73,6 +109,25 @@ public class Table implements Iterable<Row> {
 
     public void update() {
         // TODO
+    }
+
+    public Row get(Entry entry)
+    {
+        if (entry == null)
+            throw new KeyNotExistException(null);
+
+        Row row;
+        try {
+            lock.readLock().lock();
+            row = cache.getRow(entry, primaryIndex);
+        }
+        catch (KeyNotExistException e) {
+            throw e;
+        }
+        finally {
+            lock.readLock().unlock();
+        }
+        return row;
     }
 
     private ArrayList<Row> deserialize(File file) {
@@ -92,7 +147,7 @@ public class Table implements Iterable<Row> {
         private Iterator<Pair<Entry, Row>> iterator;
 
         TableIterator(Table table) {
-            this.iterator = table.index.iterator();
+            this.iterator = table.cache.getIndexIter();
         }
 
         @Override

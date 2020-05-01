@@ -7,7 +7,7 @@ import java.util.ArrayList;
 
 
 public class Page {
-    private static final int maxSize = 1024;
+    public static final int maxSize = 1024;
     private int id;               // unique id
     private int size;             // size of the page
     private ArrayList<Entry> entries;
@@ -24,27 +24,17 @@ public class Page {
         timeStamp = System.currentTimeMillis();
     }
 
-    public class EmptyRow extends Row {
-        private int position;
-
-        public EmptyRow(int position)
-        {
-            super();
-            this.position = position;
-        }
-
-        public int getPosition() { return position; }
-    }
-
     public int getId() { return id; }
 
     public String getPageFileName() { return pageFileName; }
 
-    public void setTimeStamp(long timeStamp) { this.timeStamp = timeStamp; }
+    public void setTimeStamp() { this.timeStamp = System.currentTimeMillis(); }
     public long getTimeStamp() { return timeStamp; }
 
     public void setEdited(Boolean isEdited) { this.edited = isEdited; }
     public Boolean getEdited() { return this.edited; }
+
+    public int getSize() { return size; }
 
     public ArrayList<Entry> getEntries() { return entries; }
 
