@@ -6,19 +6,20 @@ public class KeyNotExistException extends RuntimeException {
     public KeyNotExistException()
     {
         super();
-        this.key = "";
+        this.key = null;
     }
 
     public KeyNotExistException(String key)
     {
         super();
         this.key = key;
-        if(key == null)
-            this.key = "null";
     }
 
     @Override
     public String getMessage() {
-        return "Exception: key \"" + this.key + "\" doesn't exist!";
+        if (key == null)
+            return "Exception: key doesn't exist!";
+        else
+            return "Exception: key \"" + this.key + "\" doesn't exist!";
     }
 }

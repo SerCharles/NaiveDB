@@ -23,7 +23,7 @@ public class Table implements Iterable<Row> {
     public String tableName;
     public ArrayList<Column> columns;
     private Cache cache;
-    public BPlusTree<Entry, Row> index;
+    //public BPlusTree<Entry, Row> index;
     private int primaryIndex;
 
     public Table(String databaseName, String tableName, Column[] columns) {
@@ -35,8 +35,9 @@ public class Table implements Iterable<Row> {
             if (this.columns.get(i).getPrimary() == 1)
                 primaryIndex = i;
         }
-        this.index = new BPlusTree<>();
-        this.cache = new Cache(index, databaseName, tableName);
+        //this.index = new BPlusTree<>();
+        System.out.println(primaryIndex);
+        this.cache = new Cache(databaseName, tableName);
         this.lock = new ReentrantReadWriteLock();
         recover();
     }
@@ -80,7 +81,7 @@ public class Table implements Iterable<Row> {
             boolean isMatched = false;
             for (int i = 0; i < schemaLen; i++)
             {
-                if (columns.get(i).compareTo(column) != 0)
+                if (columns.get(i).compareTo(column) == 0)
                 {
                     orderedEntries.add(entries.get(i));
                     isMatched = true;

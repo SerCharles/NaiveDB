@@ -1,5 +1,6 @@
 package cn.edu.thssdb.cache;
 
+import cn.edu.thssdb.exception.DuplicateKeyException;
 import cn.edu.thssdb.exception.KeyNotExistException;
 import cn.edu.thssdb.index.BPlusTree;
 import cn.edu.thssdb.schema.Entry;
@@ -11,6 +12,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 
+import static cn.edu.thssdb.utils.Global.DATA_DIRECTORY;
+
 public class Cache {
     private static final int maxPageNum = 100;
     private HashMap<Integer, Page> pages;
@@ -18,11 +21,12 @@ public class Cache {
     private BPlusTree<Entry, Row> index;
     private String cacheName;
 
-    public Cache(BPlusTree<Entry, Row> index, String databaseName, String tableName)
+    public Cache(String databaseName, String tableName)
     {
         pageNum = 0;
         this.cacheName = databaseName + "_" + tableName;
-        this.index = index;
+        this.index = new BPlusTree<>();
+        pages = new HashMap<>();
     }
 
     public int getPageNum() { return pageNum; }
@@ -39,6 +43,11 @@ public class Cache {
             Entry primaryEntry = entries.get(primaryKey);
             int len = row.toString().length();
             curPage.insertEntry(primaryEntry, len);
+            row.setPosition(pageNum);
+            if (noOverflow)
+                index.put(primaryEntry, row);
+            else
+                index.put(primaryEntry, this.new EmptyRow(pageNum));
         }
         return noOverflow;
     }
@@ -53,6 +62,13 @@ public class Cache {
         {
             addPage();
             curPage = pages.get(pageNum);
+        }
+        row.setPosition(pageNum);
+        try {
+            index.put(primaryEntry, row);
+        }
+        catch (DuplicateKeyException e) {
+
         }
         curPage.insertEntry(primaryEntry, len);
         curPage.setEdited(true);
@@ -106,12 +122,21 @@ public class Cache {
         int originalLen = row.toString().length();
         for (int i = 0; i < targetKeys.length; i++)
         {
-            int key = targetKeys[i];
-            if (key == primaryKey)
+            if (targetKeys[i] == primaryKey)
             {
                 changePrimaryEntry = true;
                 targetPrimaryEntry = targetEntries.get(i);
+                // check if duplicated
+                if (index.contains(targetPrimaryEntry))
+                    throw new DuplicateKeyException(targetPrimaryEntry.toString());
+                break;
             }
+        }
+
+        // update row
+        for (int i = 0; i < targetKeys.length; i++)
+        {
+            int key = targetKeys[i];
             row.getEntries().set(key, targetEntries.get(i));
         }
 
@@ -120,6 +145,13 @@ public class Cache {
         {
             curPage.removeEntry(primaryEntry, originalLen);
             curPage.insertEntry(targetPrimaryEntry, row.toString().length());
+            index.remove(primaryEntry);
+            try {
+                index.put(targetPrimaryEntry, row);
+            }
+            catch (DuplicateKeyException e) {
+                throw new DuplicateKeyException(targetPrimaryEntry.toString());
+            }
         }
         curPage.setTimeStamp();
         curPage.setEdited(true);
@@ -159,7 +191,7 @@ public class Cache {
         {
             row.setPosition(pageId);
             Entry primaryEntry = row.getEntries().get(primaryKey);
-            index.put(primaryEntry, row);
+            index.update(primaryEntry, row);
             curPage.insertEntry(primaryEntry, row.toString().length());
         }
         pages.put(pageId, curPage);
@@ -203,13 +235,13 @@ public class Cache {
         for (Entry entry : entries)
         {
             rows.add(index.get(entry));
-            index.put(entry, this.new EmptyRow(targetID));
+            index.update(entry, this.new EmptyRow(targetID));
         }
         if (page.getEdited())
         {
             // rewrite to disk
             try {
-                serialize(rows, page.getPageFileName());
+                serialize(rows, DATA_DIRECTORY + page.getPageFileName());
             }
             catch (IOException e)
             {

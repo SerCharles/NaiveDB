@@ -7,7 +7,7 @@ import java.util.ArrayList;
 
 
 public class Page {
-    public static final int maxSize = 1024;
+    public static final int maxSize = 256;
     private int id;               // unique id
     private int size;             // size of the page
     private ArrayList<Entry> entries;
@@ -21,6 +21,7 @@ public class Page {
         this.id = id;
         size = 0;
         edited = false;
+        entries = new ArrayList<>();
         timeStamp = System.currentTimeMillis();
     }
 
