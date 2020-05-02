@@ -5,6 +5,7 @@ import cn.edu.thssdb.exception.KeyNotExistException;
 import cn.edu.thssdb.index.BPlusTree;
 import cn.edu.thssdb.schema.Entry;
 import cn.edu.thssdb.schema.Row;
+import javafx.scene.chart.ScatterChart;
 import javafx.util.Pair;
 
 import java.io.*;
@@ -68,7 +69,8 @@ public class Cache {
             index.put(primaryEntry, row);
         }
         catch (DuplicateKeyException e) {
-
+            curPage.setTimeStamp();
+            throw new DuplicateKeyException(primaryEntry.toString());
         }
         curPage.insertEntry(primaryEntry, len);
         curPage.setEdited(true);
@@ -127,7 +129,7 @@ public class Cache {
                 changePrimaryEntry = true;
                 targetPrimaryEntry = targetEntries.get(i);
                 // check if duplicated
-                if (index.contains(targetPrimaryEntry))
+                if (index.contains(targetPrimaryEntry) && !primaryEntry.equals(targetPrimaryEntry))
                     throw new DuplicateKeyException(targetPrimaryEntry.toString());
                 break;
             }
@@ -180,13 +182,33 @@ public class Cache {
         }
     }
 
+    public void persist()
+    {
+        for (Page page : pages.values())
+        {
+            ArrayList<Row> rows = new ArrayList<>();
+            for (Entry entry : page.getEntries())
+            {
+                rows.add(index.get(entry));
+            }
+
+            try {
+                serialize(rows, DATA_DIRECTORY + page.getPageFileName());
+            }
+            catch (IOException e)
+            {
+                return;
+            }
+        }
+    }
+
     private void exchangePage(int pageId, int primaryKey)
     {
         if (pageNum >= maxPageNum)
             expelPage();
 
         Page curPage = new Page(cacheName, pageId);
-        ArrayList<Row> rows = deserialize(new File(curPage.getPageFileName()));
+        ArrayList<Row> rows = deserialize(new File(DATA_DIRECTORY + curPage.getPageFileName()));
         for (Row row : rows)
         {
             row.setPosition(pageId);
@@ -247,7 +269,6 @@ public class Cache {
             {
                 return;
             }
-
         }
         pages.remove(targetID);
     }
@@ -260,13 +281,21 @@ public class Cache {
 
     private ArrayList<Row> deserialize(File file) {
         ArrayList<Row> rows;
+        ObjectInputStream ois = null;
         try {
-            ObjectInputStream ois = new ObjectInputStream(new FileInputStream(file));
+            ois = new ObjectInputStream(new FileInputStream(file));
             rows = (ArrayList<Row>) ois.readObject();
-            ois.close();
         }
         catch (Exception e) {
             rows = null;
+        }
+        finally {
+            try {
+                ois.close();
+            }
+            catch (Exception e){
+                return null;
+            }
         }
         return rows;
     }

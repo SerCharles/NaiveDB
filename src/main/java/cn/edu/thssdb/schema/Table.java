@@ -1,6 +1,7 @@
 package cn.edu.thssdb.schema;
 
 import cn.edu.thssdb.cache.Cache;
+import cn.edu.thssdb.exception.DuplicateKeyException;
 import cn.edu.thssdb.exception.KeyNotExistException;
 import cn.edu.thssdb.exception.SchemaLengthMismatchException;
 import cn.edu.thssdb.exception.SchemaMismatchException;
@@ -11,10 +12,7 @@ import javafx.util.Pair;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.ObjectInputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Iterator;
+import java.util.*;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class Table implements Iterable<Row> {
@@ -22,7 +20,7 @@ public class Table implements Iterable<Row> {
     private String databaseName;
     public String tableName;
     public ArrayList<Column> columns;
-    private Cache cache;
+    public Cache cache;
     //public BPlusTree<Entry, Row> index;
     private int primaryIndex;
 
@@ -52,8 +50,8 @@ public class Table implements Iterable<Row> {
             if (f != null && f.isFile())
             {
                 try{
-                    String databaseName = f.getName().split("-")[0];
-                    String tableName = f.getName().split("-")[1];
+                    String databaseName = f.getName().split("_")[1];
+                    String tableName = f.getName().split("_")[2];
                     if (!(this.databaseName.equals(databaseName) && this.tableName.equals(tableName)))
                         continue;
                 }
@@ -99,6 +97,9 @@ public class Table implements Iterable<Row> {
             lock.writeLock().lock();
             cache.insertRow(orderedEntries, primaryIndex);
         }
+        catch (DuplicateKeyException e) {
+            throw e;
+        }
         finally {
             lock.writeLock().unlock();
         }
@@ -121,6 +122,7 @@ public class Table implements Iterable<Row> {
     }
 
     public void update(Entry primaryEntry, ArrayList<Column> columns, ArrayList<Entry> entries) {
+//        System.out.println("updatet");
         if (primaryEntry == null || columns == null || entries == null)
             throw new KeyNotExistException(null);
 
@@ -130,7 +132,7 @@ public class Table implements Iterable<Row> {
         for (Column column : columns)
         {
             boolean isMatched = false;
-            for (int j = 0; j < tableColumnSize; i++)
+            for (int j = 0; j < tableColumnSize; j++)
             {
                 if (column.equals(this.columns.get(j)))
                 {
@@ -148,10 +150,9 @@ public class Table implements Iterable<Row> {
             lock.writeLock().lock();
             cache.updateRow(primaryEntry, primaryIndex, targetKeys, entries);
         }
-        catch (KeyNotExistException e) {
+        catch (KeyNotExistException | DuplicateKeyException e) {
             throw e;
-        }
-        finally {
+        } finally {
             lock.writeLock().unlock();
         }
     }
@@ -175,6 +176,11 @@ public class Table implements Iterable<Row> {
         return row;
     }
 
+    public void persist()
+    {
+        cache.persist();
+    }
+
     private ArrayList<Row> deserialize(File file) {
         ArrayList<Row> rows;
         try {
@@ -190,22 +196,30 @@ public class Table implements Iterable<Row> {
 
     private class TableIterator implements Iterator<Row> {
         private Iterator<Pair<Entry, Row>> iterator;
+        private LinkedList<Entry> q;
         private Cache mCache;
 
         TableIterator(Table table) {
             mCache = table.cache;
-            this.iterator = table.cache.getIndexIter();
+            iterator = table.cache.getIndexIter();
+            q = new LinkedList<>();
+            while (iterator.hasNext())
+            {
+                q.add(iterator.next().getKey());
+            }
+            iterator = null;
         }
 
         @Override
         public boolean hasNext() {
-            return iterator.hasNext();
+            return !q.isEmpty();
         }
 
         @Override
         public Row next() {
-            Entry entry = iterator.next().getKey();
+            Entry entry = q.getFirst();
             Row row = mCache.getRow(entry, primaryIndex);
+            q.removeFirst();
             return row;
         }
     }
