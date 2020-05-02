@@ -287,7 +287,7 @@ public class TableTest {
         ArrayList<Entry> entries;
         boolean existed = true;
 
-        id = 66;
+        id = 1599;
         r = table.get(new Entry(id));
         entries = r.getEntries();
         assertEquals(entries.get(1), new Entry("" + id));
@@ -321,7 +321,12 @@ public class TableTest {
         //table.persist();
         File dir = new File(DATA_DIRECTORY);
         File[] fileList = dir.listFiles();
+        String gitignore = ".gitignore";
         for (File f : fileList)
-            f.delete();
+        {
+            if (!gitignore.equals(f.getName()))
+                f.delete();
+        }
+
     }
 }

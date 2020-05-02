@@ -45,23 +45,39 @@ public class Table implements Iterable<Row> {
         File[] fileList = dir.listFiles();
         if (fileList == null)
             return;
+
+        HashMap<Integer, File> pageFileList = new HashMap<>();
+        int pageNum = 0;
         for (File f : fileList)
         {
             if (f != null && f.isFile())
             {
                 try{
-                    String databaseName = f.getName().split("_")[1];
-                    String tableName = f.getName().split("_")[2];
+
+                    String[] parts = f.getName().split("\\.")[0].split("_");
+
+                    String databaseName = parts[1];
+                    String tableName = parts[2];
+
+                    int id = Integer.parseInt(parts[3]);
                     if (!(this.databaseName.equals(databaseName) && this.tableName.equals(tableName)))
                         continue;
+                    pageFileList.put(id, f);
+                    if (id > pageNum)
+                        pageNum = id;
                 }
                 catch (Exception e) {
                     continue;
                 }
-
-                ArrayList<Row> rows = deserialize(f);
-                cache.insertPage(rows, primaryIndex);
             }
+        }
+
+        for (int i = 1; i <= pageNum; i++)
+        {
+
+            File f = pageFileList.get(i);
+            ArrayList<Row> rows = deserialize(f);
+            cache.insertPage(rows, primaryIndex);
         }
     }
 
