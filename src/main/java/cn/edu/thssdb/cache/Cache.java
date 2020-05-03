@@ -202,6 +202,25 @@ public class Cache {
         }
     }
 
+    public void dropSelf()
+    {
+        for (Page page : pages.values())
+        {
+            File pageFile = new File(page.getPageFileName());
+            if (pageFile.isFile())
+            {
+                pageFile.delete();
+            }
+            page.getEntries().clear();
+            pages.remove(page.getId());
+        }
+        pages.clear();
+
+        // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        // maybe should delete element one by one?
+        index = null;
+    }
+
     private void exchangePage(int pageId, int primaryKey)
     {
         if (pageNum >= maxPageNum)

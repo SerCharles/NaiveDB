@@ -194,7 +194,27 @@ public class Table implements Iterable<Row> {
 
     public void persist()
     {
-        cache.persist();
+        try {
+            lock.readLock().lock();
+            cache.persist();
+        }
+        finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    public void dropSelf()
+    {
+        try {
+            lock.writeLock().lock();
+            cache.dropSelf();
+            cache = null;
+            columns.clear();
+            columns = null;
+        }
+        finally {
+            lock.writeLock().unlock();
+        }
     }
 
     private ArrayList<Row> deserialize(File file) {
