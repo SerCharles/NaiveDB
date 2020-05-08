@@ -327,6 +327,5 @@ public class TableTest {
             if (!gitignore.equals(f.getName()))
                 f.delete();
         }
-
     }
 }

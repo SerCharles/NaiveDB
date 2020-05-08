@@ -34,7 +34,7 @@ public class Table implements Iterable<Row> {
                 primaryIndex = i;
         }
         //this.index = new BPlusTree<>();
-        System.out.println(primaryIndex);
+//        System.out.println(primaryIndex);
         this.cache = new Cache(databaseName, tableName);
         this.lock = new ReentrantReadWriteLock();
         recover();
@@ -209,6 +209,29 @@ public class Table implements Iterable<Row> {
             lock.writeLock().lock();
             cache.dropSelf();
             cache = null;
+
+            File dir = new File(DATA_DIRECTORY);
+            File[] fileList = dir.listFiles();
+            if (fileList == null)
+                return;
+            for (File f : fileList)
+            {
+                if (f != null && f.isFile())
+                {
+                    try {
+                        String[] parts = f.getName().split("\\.")[0].split("_");
+                        String databaseName = parts[1];
+                        String tableName = parts[2];
+                        if (!(this.databaseName.equals(databaseName) && this.tableName.equals(tableName)))
+                            continue;
+                    }
+                    catch (Exception e) {
+                        continue;
+                    }
+                    f.delete();
+                }
+            }
+
             columns.clear();
             columns = null;
         }

@@ -206,13 +206,7 @@ public class Cache {
     {
         for (Page page : pages.values())
         {
-            File pageFile = new File(page.getPageFileName());
-            if (pageFile.isFile())
-            {
-                pageFile.delete();
-            }
             page.getEntries().clear();
-            pages.remove(page.getId());
         }
         pages.clear();
 

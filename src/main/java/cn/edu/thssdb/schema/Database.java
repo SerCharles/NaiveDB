@@ -2,6 +2,7 @@ package cn.edu.thssdb.schema;
 
 import cn.edu.thssdb.exception.DuplicateTableException;
 import cn.edu.thssdb.exception.FileIOException;
+import cn.edu.thssdb.exception.TableNotExistException;
 import cn.edu.thssdb.query.QueryResult;
 import cn.edu.thssdb.query.QueryTable;
 import cn.edu.thssdb.type.ColumnType;
@@ -62,7 +63,39 @@ public class Database {
         }
     }
 
-    public void drop() {
+    public Table get(String name)
+    {
+        try {
+            lock.readLock().lock();
+            if (!tables.containsKey(name))
+                throw new TableNotExistException(name);
+            return tables.get(name);
+        }
+        finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    public void drop(String name)
+    {
+        try {
+            lock.writeLock().lock();
+            if (!tables.containsKey(name))
+                throw new TableNotExistException(name);
+            String metaFilename = DATA_DIRECTORY + "meta_" + this.name + "_" + name + ".data";
+            File metaFile = new File(metaFilename);
+            if (metaFile.isFile())
+                metaFile.delete();
+            Table table = tables.get(name);
+            table.dropSelf();
+            tables.remove(name);
+        }
+        finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    public void dropSelf() {
         try {
             lock.writeLock().lock();
             final String filenamePrefix = DATA_DIRECTORY + "meta_" + this.name + "_";
@@ -73,8 +106,9 @@ public class Database {
                 if (metaFile.isFile())
                     metaFile.delete();
                 table.dropSelf();
-                tables.remove(table.tableName);
+//                tables.remove(table.tableName);
             }
+            tables.clear();
             tables = null;
         }
         finally {
@@ -126,6 +160,8 @@ public class Database {
                 }
                 Table table = new Table(this.name, tableName, columns.toArray(new Column[0]));
                 tables.put(tableName, table);
+                bufferedReader.close();
+                reader.close();
             }
             catch (Exception e) {
                 continue;

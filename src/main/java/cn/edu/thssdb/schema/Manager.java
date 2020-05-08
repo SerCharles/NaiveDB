@@ -25,7 +25,7 @@ public class Manager {
         recover();
     }
 
-    private void createDatabaseIfNotExists(String databaseName) {
+    public void createDatabaseIfNotExists(String databaseName) {
         try {
             lock.writeLock().lock();
             if (!databases.containsKey(databaseName))
@@ -36,13 +36,25 @@ public class Manager {
         }
     }
 
-    private void deleteDatabase(String databaseName) {
+    public Database get(String databaseName) {
+        try {
+            lock.readLock().lock();
+            if (!databases.containsKey(databaseName))
+                throw new DatabaseNotExistException(databaseName);
+            return databases.get(databaseName);
+        }
+        finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    public void deleteDatabase(String databaseName) {
         try {
             lock.writeLock().lock();
             if (!databases.containsKey(databaseName))
                 throw new DatabaseNotExistException(databaseName);
             Database db = databases.get(databaseName);
-            db.drop();
+            db.dropSelf();
             db = null;
             databases.remove(databaseName);
         }
@@ -51,7 +63,7 @@ public class Manager {
         }
     }
 
-    private void recover()
+    public void recover()
     {
         File managerFile = new File(DATA_DIRECTORY + "manager.data");
         if (!managerFile.isFile())
@@ -82,8 +94,8 @@ public class Manager {
             {
                 writer.write(databaseName + "\n");
             }
-            fos.close();
             writer.close();
+            fos.close();
         }
         catch (Exception e) {
             throw new FileIOException(DATA_DIRECTORY + "manager.data");
