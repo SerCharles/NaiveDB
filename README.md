@@ -7,5 +7,5 @@
 ## Module Design
 
 1. [Storage Module](doc/storage.md)
-2. Metadata Module
+2. [Metadata Module](doc/metadata.md)
 
