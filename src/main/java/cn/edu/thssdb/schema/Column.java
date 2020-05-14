@@ -19,6 +19,14 @@ public class Column implements Comparable<Column> {
 
   public int getPrimary() { return primary; }
 
+  public String getName() {
+    return this.name;
+  }
+
+  public ColumnType getType() {
+    return this.type;
+  }
+
   @Override
   public int compareTo(Column e) {
     return name.compareTo(e.name);
