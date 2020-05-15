@@ -4,8 +4,10 @@ import cn.edu.thssdb.exception.DuplicateTableException;
 import cn.edu.thssdb.exception.FileIOException;
 import cn.edu.thssdb.exception.TableNotExistException;
 import cn.edu.thssdb.query.QueryResult;
-import cn.edu.thssdb.query.QueryTable;
 import cn.edu.thssdb.type.ColumnType;
+import cn.edu.thssdb.query.QueryTable;
+import cn.edu.thssdb.query.QueryResult;
+import cn.edu.thssdb.query.Logic;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -116,10 +118,17 @@ public class Database {
         }
     }
 
-    public String select(QueryTable[] queryTables) {
-        // TODO
-        QueryResult queryResult = new QueryResult(queryTables);
-        return null;
+    public String select(String[] columnsProjected, QueryTable the_table, Logic select_logic, boolean distinct) {
+        try {
+            lock.readLock().lock();
+            the_table.SetLogicSelect(select_logic);
+            QueryResult query_result = new QueryResult(the_table, columnsProjected, distinct);
+            ArrayList<Row> the_result = query_result.GenerateQueryRecords();
+            //TODO:显示
+            return "null";
+        } finally {
+            lock.readLock().unlock();
+        }
     }
 
     private void recover() {

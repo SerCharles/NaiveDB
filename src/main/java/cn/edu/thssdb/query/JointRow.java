@@ -13,10 +13,10 @@ import cn.edu.thssdb.type.ComparerType;
 import cn.edu.thssdb.type.ColumnType;
 import cn.edu.thssdb.query.Comparer;
 
-/*
-描述：查询用的row，用于处理查询时的值读取等
-参数：如果是单一table，就只需要单一row和table即可
-如果是复合table，那么就是两个长度一样的linkedlist，一个是row，一个是table
+/**
+*描述：查询用的row，用于处理查询时的值读取等
+*参数：如果是单一table，就只需要单一row和table即可
+*如果是复合table，那么就是两个长度一样的linkedlist，一个是row，一个是table
 */
 
 public class JointRow extends Row {
@@ -41,10 +41,10 @@ public class JointRow extends Row {
         mTableInfoList.add(the_table);
     }
 
-    /*
-    描述：将columntype转换成comparertype
-    参数：columntype
-    返回：comparertype
+    /**
+    *描述：将columntype转换成comparertype
+    *参数：columntype
+    *返回：comparertype
      */
     private ComparerType GetComparerType(ColumnType the_type) {
         switch (the_type) {
@@ -59,10 +59,10 @@ public class JointRow extends Row {
         return ComparerType.NULL;
     }
 
-    /*
-    描述：将TableName.ColumnName形式的变量拆分出TableName,ColumnName
-    参数：全名
-    返回：一个长度为2的数组，0号是tablename，1号是columnname
+    /**
+    *描述：将TableName.ColumnName形式的变量拆分出TableName,ColumnName
+    *参数：全名
+    *返回：一个长度为2的数组，0号是tablename，1号是columnname
      */
     private String[] SplitColumnName(String full_name) {
         String[] splited_name = full_name.split("\\.");
@@ -72,10 +72,10 @@ public class JointRow extends Row {
         return splited_name;
     }
 
-    /*
-    描述：找到一个列全名在entry数组对应的位置
-    参数：全名
-    返回：位置
+    /**
+    *描述：给定列，返回对应取值对应的comparer
+    *参数：全名
+    *返回：取值
     */
     public Comparer getColumnComparer(String column_name) {
         int index = 0;

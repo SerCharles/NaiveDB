@@ -2,9 +2,9 @@ package cn.edu.thssdb.exception;
 
 import cn.edu.thssdb.type.ComparerType;
 
-/*
-描述：待比较参数类型不匹配异常
-参数：两个类型
+/**
+*描述：待比较参数类型不匹配异常
+*参数：两个类型
  */
 public class TypeNotMatchException extends RuntimeException {
 

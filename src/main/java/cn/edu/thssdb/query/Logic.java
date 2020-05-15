@@ -3,8 +3,8 @@ package cn.edu.thssdb.query;
 import cn.edu.thssdb.type.ResultType;
 import cn.edu.thssdb.type.LogicType;
 
-/*
-描述：逻辑类，处理and/or连接的各个情况
+/**
+*描述：逻辑类，处理and/or连接的各个情况
  */
 public class Logic {
     //如果logic是有多个and/or连接的
@@ -28,10 +28,10 @@ public class Logic {
         this.mCondition = condition;
     }
 
-    /*
-    描述：计算当前逻辑的运算结果
-    参数：无
-    返回：结果类型
+    /**
+    *描述：计算当前逻辑的运算结果
+    *参数：无
+    *返回：结果类型
     */
     public ResultType GetResult(JointRow the_row) {
         //单一条件

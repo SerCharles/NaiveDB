@@ -3,9 +3,9 @@ package cn.edu.thssdb.query;
 
 import cn.edu.thssdb.type.ComparerType;
 
-/*
-描述：比较元素类，用于两个元素的比较
-构造参数：type，string形式value
+/**
+*描述：比较元素类，用于两个元素的比较
+*构造参数：type，string形式value
 */
 public class Comparer {
     public ComparerType mType;

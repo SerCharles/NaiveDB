@@ -22,7 +22,7 @@ public class Table implements Iterable<Row> {
     public ArrayList<Column> columns;
     public Cache cache;
     //public BPlusTree<Entry, Row> index;
-    private int primaryIndex;
+    private int primaryIndex = -1;
 
     public Table(String databaseName, String tableName, Column[] columns) {
         this.databaseName = databaseName;
@@ -252,7 +252,15 @@ public class Table implements Iterable<Row> {
         }
         return rows;
     }
-
+    
+    
+    public String GetPrimaryName() {
+        if(this.primaryIndex < 0 || this.primaryIndex >= this.columns.size()) {
+            return null;
+        }
+        return this.columns.get(this.primaryIndex).getName();
+    }
+    
     private class TableIterator implements Iterator<Row> {
         private Iterator<Pair<Entry, Row>> iterator;
         private LinkedList<Entry> q;
@@ -281,6 +289,7 @@ public class Table implements Iterable<Row> {
             q.removeFirst();
             return row;
         }
+
     }
 
     @Override
