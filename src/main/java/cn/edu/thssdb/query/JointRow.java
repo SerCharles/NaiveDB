@@ -26,7 +26,7 @@ public class JointRow extends Row {
         mTableInfoList = new ArrayList<>();
         this.entries = new ArrayList<>();
         //for (int i = rows.size() - 1; i >= 0; i--) {
-        for (int i = 0; i < rows.size(); i++) {
+        for (int i = rows.size() - 1; i >= 0; i--) {
             entries.addAll(rows.get(i).getEntries());
         }
         for(Table table : tables){

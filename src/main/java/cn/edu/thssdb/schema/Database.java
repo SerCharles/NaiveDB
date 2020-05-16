@@ -118,14 +118,14 @@ public class Database {
         }
     }
 
-    public String select(String[] columnsProjected, QueryTable the_table, Logic select_logic, boolean distinct) {
+    public ArrayList<Row> select(String[] columnsProjected, QueryTable the_table, Logic select_logic, boolean distinct) {
         try {
             lock.readLock().lock();
             the_table.SetLogicSelect(select_logic);
             QueryResult query_result = new QueryResult(the_table, columnsProjected, distinct);
             ArrayList<Row> the_result = query_result.GenerateQueryRecords();
             //TODO:显示
-            return "null";
+            return the_result;
         } finally {
             lock.readLock().unlock();
         }

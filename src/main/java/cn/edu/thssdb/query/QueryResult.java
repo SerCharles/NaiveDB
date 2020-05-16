@@ -145,6 +145,9 @@ public class QueryResult {
     ArrayList<Row> result_list = new ArrayList<>();
     while(mTable.hasNext()) {
       JointRow new_row = mTable.next();
+      if(new_row == null) {
+        break;
+      }
       Entry[] entries = new Entry[mColumnIndex.size()];
       ArrayList<Entry> full_entries = new_row.getEntries();
       for(int i = 0; i < mColumnIndex.size(); i ++) {
