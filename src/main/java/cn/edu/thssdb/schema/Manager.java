@@ -5,7 +5,9 @@ import cn.edu.thssdb.exception.FileIOException;
 import cn.edu.thssdb.server.ThssDB;
 
 import java.io.*;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import static cn.edu.thssdb.utils.Global.DATA_DIRECTORY;
@@ -30,6 +32,9 @@ public class Manager {
             lock.writeLock().lock();
             if (!databases.containsKey(databaseName))
                 databases.put(databaseName, new Database(databaseName));
+            if (currentDB == null) {
+                currentDB = get(databaseName);
+            }
         }
         finally {
             lock.writeLock().unlock();
@@ -128,7 +133,12 @@ public class Manager {
             lock.readLock().unlock();
         }
     }
-
+    
+    public Database getCurrent() {
+        return currentDB;
+    }
+    
+    
     private static class ManagerHolder {
         private static final Manager INSTANCE = new Manager();
 

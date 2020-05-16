@@ -12,74 +12,67 @@ import cn.edu.thssdb.query.Logic;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import static cn.edu.thssdb.utils.Global.DATA_DIRECTORY;
 
 public class Database {
-
+    
     private String name;
     private HashMap<String, Table> tables;
     ReentrantReadWriteLock lock;
-
+    
     public Database(String name) {
         this.name = name;
         this.tables = new HashMap<>();
         this.lock = new ReentrantReadWriteLock();
         recover();
     }
-
+    
     private void persist() {
-        for (Table table : tables.values())
-        {
+        for (Table table : tables.values()) {
             String filename = DATA_DIRECTORY + "meta_" + name + "_" + table.tableName + ".data";
             ArrayList<Column> columns = table.columns;
             try {
-                FileOutputStream  fos = new FileOutputStream(filename);
+                FileOutputStream fos = new FileOutputStream(filename);
                 OutputStreamWriter writer = new OutputStreamWriter(fos);
-                for (Column column : columns)
-                {
+                for (Column column : columns) {
                     writer.write(column.toString() + "\n");
                 }
                 writer.close();
                 fos.close();
-            }
-            catch (Exception e) {
+            } catch (Exception e) {
                 throw new FileIOException(filename);
             }
         }
     }
-
-    public void create(String name, Column[] columns)
-    {
+    
+    public void create(String name, Column[] columns) {
         try {
             lock.writeLock().lock();
             if (tables.containsKey(name))
                 throw new DuplicateTableException(name);
-
+    
             Table newTable = new Table(this.name, name, columns);
             tables.put(name, newTable);
-        }
-        finally {
+        } finally {
             lock.writeLock().unlock();
         }
     }
-
-    public Table get(String name)
-    {
+    
+    public Table get(String name) {
         try {
             lock.readLock().lock();
             if (!tables.containsKey(name))
                 throw new TableNotExistException(name);
             return tables.get(name);
-        }
-        finally {
+        } finally {
             lock.readLock().unlock();
         }
     }
-
-    public void drop(String name)
-    {
+    
+    public void drop(String name) {
         try {
             lock.writeLock().lock();
             if (!tables.containsKey(name))
@@ -91,19 +84,17 @@ public class Database {
             Table table = tables.get(name);
             table.dropSelf();
             tables.remove(name);
-        }
-        finally {
+        } finally {
             lock.writeLock().unlock();
         }
     }
-
+    
     public void dropSelf() {
         try {
             lock.writeLock().lock();
             final String filenamePrefix = DATA_DIRECTORY + "meta_" + this.name + "_";
             final String filenameSuffix = ".data";
-            for (Table table : tables.values())
-            {
+            for (Table table : tables.values()) {
                 File metaFile = new File(filenamePrefix + table.tableName + filenameSuffix);
                 if (metaFile.isFile())
                     metaFile.delete();
@@ -112,12 +103,11 @@ public class Database {
             }
             tables.clear();
             tables = null;
-        }
-        finally {
+        } finally {
             lock.writeLock().unlock();
         }
     }
-
+    
     public String select(String[] columnsProjected, QueryTable the_table, Logic select_logic, boolean distinct) {
         try {
             String result_string = "";
@@ -126,8 +116,8 @@ public class Database {
             QueryResult query_result = new QueryResult(the_table, columnsProjected, distinct);
             ArrayList<Row> the_result = query_result.GenerateQueryRecords();
             result_string = result_string + query_result.MetaToString() + "\n";
-            for(Row row : the_result) {
-                if(row != null) {
+            for (Row row : the_result) {
+                if (row != null) {
                     result_string = result_string + row.toString() + "\n";
                 }
             }
@@ -136,16 +126,15 @@ public class Database {
             lock.readLock().unlock();
         }
     }
-
+    
     private void recover() {
         File dir = new File(DATA_DIRECTORY);
         File[] fileList = dir.listFiles();
         if (fileList == null)
             return;
-
+        
         final String meta = "meta";
-        for (File f : fileList)
-        {
+        for (File f : fileList) {
             if (!f.isFile())
                 continue;
             try {
@@ -157,13 +146,12 @@ public class Database {
                 String tableName = parts[2];
                 if (tables.containsKey(tableName))
                     throw new DuplicateTableException(tableName);
-
+    
                 ArrayList<Column> columns = new ArrayList<>();
                 InputStreamReader reader = new InputStreamReader(new FileInputStream(f));
                 BufferedReader bufferedReader = new BufferedReader(reader);
                 String line = null;
-                while ((line = bufferedReader.readLine()) != null)
-                {
+                while ((line = bufferedReader.readLine()) != null) {
                     String[] info = line.split(",");
                     String columnName = info[0];
                     ColumnType columnType = ColumnType.valueOf(info[1]);
@@ -177,27 +165,55 @@ public class Database {
                 tables.put(tableName, table);
                 bufferedReader.close();
                 reader.close();
-            }
-            catch (Exception e) {
+            } catch (Exception e) {
                 continue;
             }
         }
     }
-
+    
     public void quit() {
         try {
             lock.writeLock().lock();
-            for (Table table : tables.values())
-            {
+            for (Table table : tables.values()) {
                 table.persist();
             }
             persist();
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             throw e;
-        }
-        finally {
+        } finally {
             lock.writeLock().unlock();
         }
+    }
+    
+    
+    public String ShowOneTable(String tableName) {
+        Table table = get(tableName);
+        return table.ToString();
+    }
+    
+    public String ToString() {
+        // 迭代值
+        String Top = "Database Name: " + name;
+        String result = Top + "\n" + "\n";
+        for (Table the_table : tables.values()) {
+            result += the_table.ToString();
+        }
+        return result;
+    }
+    
+    public void insert(String table_name, String[] column_names, String[] values) {
+        Table the_table = get(table_name);
+        the_table.insert(column_names, values);
+    }
+    
+    
+    public String delete(String table_name, Logic the_logic) {
+        Table the_table = get(table_name);
+        return the_table.delete(the_logic);
+    }
+    
+    public String update(String table_name, String column_name, String value, Logic the_logic) {
+        Table the_table = get(table_name);
+        return the_table.update(column_name, value, the_logic);
     }
 }

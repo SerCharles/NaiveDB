@@ -1,12 +1,14 @@
 package cn.edu.thssdb.schema;
 
 import cn.edu.thssdb.cache.Cache;
-import cn.edu.thssdb.exception.DuplicateKeyException;
-import cn.edu.thssdb.exception.KeyNotExistException;
-import cn.edu.thssdb.exception.SchemaLengthMismatchException;
-import cn.edu.thssdb.exception.SchemaMismatchException;
+import cn.edu.thssdb.exception.*;
 import cn.edu.thssdb.index.BPlusTree;
 import static cn.edu.thssdb.utils.Global.*;
+
+import cn.edu.thssdb.query.JointRow;
+import cn.edu.thssdb.query.Logic;
+import cn.edu.thssdb.type.ColumnType;
+import cn.edu.thssdb.type.ResultType;
 import javafx.util.Pair;
 
 import java.io.File;
@@ -120,6 +122,103 @@ public class Table implements Iterable<Row> {
             lock.writeLock().unlock();
         }
     }
+    
+    
+    /**
+     * 描述：将string类型的value转换成column的类型
+     * 参数：column，value
+     * 返回：新的值--comparable，如果不匹配会抛出异常
+     */
+    private Comparable ParseValue(Column the_column, String value) {
+        if (value.equals("null")) {
+            if (the_column.NotNull()) {
+                throw new NullValueException(the_column.getName());
+            }
+            else {
+                return null;
+            }
+        }
+        switch (the_column.getType()) {
+            case DOUBLE:
+                return Double.parseDouble(value);
+            case INT:
+                return Integer.parseInt(value);
+            case FLOAT:
+                return Float.parseFloat(value);
+            case LONG:
+                return Long.parseLong(value);
+            case STRING:
+                return value.substring(1, value.length() - 1);
+        }
+        return null;
+    }
+    
+    /**
+     * 描述：判断value是否合法，符合column规则，这里只判断null和max length
+     * 参数：column，value
+     * 返回：无，如果不合法会抛出异常
+     */
+    private void JudgeValid(Column the_column, Comparable new_value) {
+        boolean not_null = the_column.NotNull();
+        ColumnType the_type = the_column.getType();
+        int max_length = the_column.getMaxLength();
+        if(not_null == true && new_value == null) {
+            throw new NullValueException(the_column.getName());
+        }
+        if(the_type == ColumnType.STRING && new_value != null) {
+            if(max_length >= 0 && (new_value + "").length() > max_length) {
+                throw new ValueLengthExceedException(the_column.getName());
+            }
+        }
+    }
+    
+    /**
+     * 描述：用于sql parser的插入函数
+     * 参数：column数组，value数组，都是string形式
+     * 返回：无，如果不合法会抛出异常
+     */
+    public void insert(String[] columns, String[] values) {
+        if (columns == null || values == null)
+            throw new SchemaLengthMismatchException(this.columns.size(), 0);
+        
+        // match columns and reorder entries
+        int schemaLen = this.columns.size();
+        if (columns.length != schemaLen || values.length != schemaLen)
+            throw new SchemaLengthMismatchException(schemaLen, columns.length);
+        ArrayList<Entry> orderedEntries = new ArrayList<>();
+        for (Column column : this.columns)
+        {
+            boolean isMatched = false;
+            for (int i = 0; i < schemaLen; i++)
+            {
+                if (columns[i].equals(column.getName().toLowerCase()))
+                {
+                    Comparable the_entry_value = ParseValue(column, values[i]);
+                    JudgeValid(column, the_entry_value);
+                    Entry the_entry = new Entry(the_entry_value);
+                    orderedEntries.add(the_entry);
+                    isMatched = true;
+                    break;
+                }
+            }
+            if (!isMatched)
+            {
+                throw new SchemaMismatchException(column.toString());
+            }
+        }
+        
+        // write to cache
+        try {
+            lock.writeLock().lock();
+            cache.insertRow(orderedEntries, primaryIndex);
+        }
+        catch (DuplicateKeyException e) {
+            throw e;
+        }
+        finally {
+            lock.writeLock().unlock();
+        }
+    }
 
     public void delete(Entry primaryEntry) {
         if (primaryEntry == null)
@@ -135,6 +234,24 @@ public class Table implements Iterable<Row> {
         finally {
             lock.writeLock().unlock();
         }
+    }
+    
+    /**
+     * 描述：用于sql parser的删除函数
+     * 参数：c逻辑
+     * 返回：字符串，表明删除了多少数据
+     */
+    public String delete(Logic the_logic) {
+        int count = 0;
+        for(Row row : this) {
+            JointRow the_row = new JointRow(row, this);
+            if(the_logic == null || the_logic.GetResult(the_row) == ResultType.TRUE) {
+                Entry primary_entry = row.getEntries().get(primaryIndex);
+                delete(primary_entry);
+                count ++;
+            }
+        }
+        return "Deleted " + count + " items.";
     }
 
     public void update(Entry primaryEntry, ArrayList<Column> columns, ArrayList<Entry> entries) {
@@ -172,6 +289,50 @@ public class Table implements Iterable<Row> {
             lock.writeLock().unlock();
         }
     }
+    
+    /**
+     * 描述：用于sql parser的更新函数
+     * 参数：待更新列名，待更新值（string类型），逻辑
+     * 返回：字符串，表明更新了多少数据
+     */
+    public String update(String column_name, String value, Logic the_logic) {
+        int count = 0;
+        for(Row row : this) {
+            JointRow the_row = new JointRow(row, this);
+            if(the_logic == null || the_logic.GetResult(the_row) == ResultType.TRUE) {
+                Entry primary_entry = row.getEntries().get(primaryIndex);
+                //找到对应column
+                boolean whether_find = false;
+                Column the_column = null;
+                for(Column column : this.columns) {
+                    if(column.getName().equals(column_name)) {
+                        the_column = column;
+                        whether_find = true;
+                        break;
+                    }
+                }
+                if(the_column == null || whether_find == false) {
+                    throw new AttributeNotFoundException(column_name);
+                }
+                
+                //值处理，合法性判断
+                Comparable the_entry_value = ParseValue(the_column, value);
+                JudgeValid(the_column, the_entry_value);
+                
+                //插入
+                Entry the_entry = new Entry(the_entry_value);
+                ArrayList<Column> the_column_list = new ArrayList<>();
+                the_column_list.add(the_column);
+                ArrayList<Entry> the_entry_list = new ArrayList<>();
+                the_entry_list.add(the_entry);
+                update(primary_entry, the_column_list, the_entry_list);
+                count ++;
+            }
+        }
+        return "Updated " + count + " items.";
+    }
+    
+    
 
     public Row get(Entry entry)
     {
@@ -265,6 +426,16 @@ public class Table implements Iterable<Row> {
         return this.primaryIndex;
     }
     
+    public String ToString() {
+        String name = this.tableName;
+        String top = "Column Name, Column Type, Primary, Is Null, Max Length";
+        String result = "Table Name: " + name + "\n" + top + "\n";
+        for(Column column : this.columns) {
+            result = result + column.toString() + "\n";
+        }
+        return result;
+    }
+    
     private class TableIterator implements Iterator<Row> {
         private Iterator<Pair<Entry, Row>> iterator;
         private LinkedList<Entry> q;
@@ -300,4 +471,5 @@ public class Table implements Iterable<Row> {
     public Iterator<Row> iterator() {
         return new TableIterator(this);
     }
+    
 }

@@ -21,7 +21,7 @@ import cn.edu.thssdb.query.Comparer;
 
 public class JointRow extends Row {
     private ArrayList<Table> mTableInfoList;
-    JointRow(LinkedList<Row> rows, ArrayList<Table> tables) {
+    public JointRow(LinkedList<Row> rows, ArrayList<Table> tables) {
         super();
         mTableInfoList = new ArrayList<>();
         this.entries = new ArrayList<>();
@@ -33,7 +33,7 @@ public class JointRow extends Row {
             mTableInfoList.add(table);
         }
     }
-    JointRow(Row the_row, Table the_table) {
+    public JointRow(Row the_row, Table the_table) {
         super();
         mTableInfoList = new ArrayList<>();
         this.entries = new ArrayList<>();
