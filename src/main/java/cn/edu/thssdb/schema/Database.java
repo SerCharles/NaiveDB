@@ -118,14 +118,20 @@ public class Database {
         }
     }
 
-    public ArrayList<Row> select(String[] columnsProjected, QueryTable the_table, Logic select_logic, boolean distinct) {
+    public String select(String[] columnsProjected, QueryTable the_table, Logic select_logic, boolean distinct) {
         try {
+            String result_string = "";
             lock.readLock().lock();
             the_table.SetLogicSelect(select_logic);
             QueryResult query_result = new QueryResult(the_table, columnsProjected, distinct);
             ArrayList<Row> the_result = query_result.GenerateQueryRecords();
-            //TODO:显示
-            return the_result;
+            result_string = result_string + query_result.MetaToString() + "\n";
+            for(Row row : the_result) {
+                if(row != null) {
+                    result_string = result_string + row.toString() + "\n";
+                }
+            }
+            return result_string;
         } finally {
             lock.readLock().unlock();
         }

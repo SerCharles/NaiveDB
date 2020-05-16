@@ -326,7 +326,8 @@ public class QueryTest {
         Comparer thss_comp = new Comparer(ComparerType.STRING, "THSS");
         Comparer gpa_comp = new Comparer(ComparerType.COLUMN, "GPA");
         Comparer value_comp = new Comparer(ComparerType.NUMBER, "3.8");
-        
+        Comparer id_value_comp = new Comparer(ComparerType.NUMBER, "1");
+    
         //null
         Condition condition1 = null;
         //name == "sgl"
@@ -348,6 +349,8 @@ public class QueryTest {
         Condition condition8 = new Condition(id_comp, grade_id_comp, ConditionType.EQ);
         //dept == dept_name
         Condition condition9 = new Condition(dept_comp, dept_name_comp, ConditionType.EQ);
+        //id == 1
+        Condition condition10 = new Condition(id_value_comp, id_comp, ConditionType.EQ);
         
         //no logic
         Logic logic1 = new Logic(condition1);
@@ -375,7 +378,12 @@ public class QueryTest {
         Logic logic91 = new Logic(logic7, logic41, LogicType.AND);
         //student.id == grade.id and dept == dept_name
         Logic logic10 = new Logic(logic7, new Logic(condition9), LogicType.AND);
+        //id == 1
+        Logic logic11 = new Logic(condition10);
     
+    
+        QueryTable query0 = new SingleTable(table1);
+        query0.SetLogicSelect(logic11);
         QueryTable query1 = new SingleTable(table1);
         query1.SetLogicSelect(logic1);
         QueryTable query2 = new SingleTable(table1);
@@ -405,7 +413,7 @@ public class QueryTest {
         query741.SetLogicSelect(logic41);
         QueryTable query75 = new JointTable(list1, logic7);
         query75.SetLogicSelect(logic5);
-    
+        
         ArrayList<Table> list2 = new ArrayList<>();
         list2.add(table1);
         list2.add(table2);
@@ -426,39 +434,33 @@ public class QueryTest {
         String[] search2 = {"name"};
         String[] search3 = null;
         String[] search4 = {"name", "id"};
-        
-        /*
-        //ArrayList<Row> answer11 = university.select(search1, query1, logic1, true);
-        //ArrayList<Row> answer12 = university.select(search2, query1, logic1, true);
-        ArrayList<Row> answer13 = university.select(search3, query1, logic1, true);
-        //ArrayList<Row> answer14 = university.select(search4, query1, logic1, true);
-        
-        ArrayList<Row> answer21 = university.select(search1, query2, logic2, true);
-        //ArrayList<Row> answer22 = university.select(search2, query2, logic2, true);
-        //ArrayList<Row> answer23 = university.select(search3, query2, logic2, true);
-        //ArrayList<Row> answer24 = university.select(search4, query2, logic2, true);
     
-        ArrayList<Row> answer4 = university.select(search3, query4, logic4, true);
-        ArrayList<Row> answer41 = university.select(search3, query41, logic41, true);
-        ArrayList<Row> answer5 = university.select(search3, query5, logic5, true);
-        ArrayList<Row> answer6 = university.select(search3, query6, logic6, true);
-        ArrayList<Row> answer61 = university.select(search3, query61, logic61, true);
-        */
+    
+        System.out.println("test 1:\n" + university.select(search3, query1, logic1, true));
+        
+        System.out.println("test 2:\n" + university.select(search1, query2, logic2, true));
+    
+    
+        System.out.println("test 3:\n" + university.select(search3, query4, logic4, true));
+        System.out.println("test 4:\n" + university.select(search3, query41, logic41, true));
+        System.out.println("test 5:\n" + university.select(search3, query5, logic5, true));
+        System.out.println("test 6:\n" + university.select(search3, query6, logic6, true));
+        System.out.println("test 7:\n" + university.select(search3, query61, logic61, true));
+        
 
         
-        //ArrayList<Row> answer71 = university.select(search1, query7, logic1, true);
-        ArrayList<Row> answer73 = university.select(search3, query7, logic1, true);
-        ArrayList<Row> answer711 = university.select(search1, query71, logic2, true);
-        //ArrayList<Row> answer713 = university.select(search3, query71, logic2, true);
-        ArrayList<Row> answer740 = university.select(search3, query74, logic4, true);
-        ArrayList<Row> answer741 = university.select(search1, query741, logic41, true);
-        ArrayList<Row> answer75 = university.select(search3, query75, logic5, true);
+        System.out.println("test 8:\n" + university.select(search3, query7, logic1, true));
+        System.out.println("test 9:\n" + university.select(search1, query71, logic2, true));
+        System.out.println("test 10:\n" + university.select(search3, query74, logic4, true));
+        System.out.println("test 11:\n" + university.select(search1, query741, logic41, true));
+        System.out.println("test 12:\n" + university.select(search3, query75, logic5, true));
     
-        ArrayList<Row> answer10 = university.select(search3, query10, logic1, true);
-        ArrayList<Row> answer102 = university.select(search3, query102, logic2, true);
-        ArrayList<Row> answer104 = university.select(search3, query104, logic4, true);
-        ArrayList<Row> answer1041 = university.select(search3, query1041, logic41, true);
-        ArrayList<Row> answer105 = university.select(search3, query105, logic5, true);
-        
+        System.out.println("test 13:\n" + university.select(search3, query10, logic1, true));
+        System.out.println("test 14:\n" + university.select(search3, query102, logic2, true));
+        System.out.println("test 15:\n" + university.select(search3, query104, logic4, true));
+        System.out.println("test 16:\n" + university.select(search3, query1041, logic41, true));
+        System.out.println("test 17:\n" + university.select(search3, query105, logic5, true));
+        System.out.println("test 18:\n" + university.select(search3, query0, logic11, true));
+    
     }
 }

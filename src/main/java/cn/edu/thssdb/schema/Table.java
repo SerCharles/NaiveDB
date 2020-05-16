@@ -261,6 +261,10 @@ public class Table implements Iterable<Row> {
         return this.columns.get(this.primaryIndex).getName();
     }
     
+    public int GetPrimaryIndex() {
+        return this.primaryIndex;
+    }
+    
     private class TableIterator implements Iterator<Row> {
         private Iterator<Pair<Entry, Row>> iterator;
         private LinkedList<Entry> q;

@@ -7,6 +7,7 @@ import cn.edu.thssdb.schema.Row;
 import cn.edu.thssdb.schema.Column;
 import cn.edu.thssdb.schema.Table;
 import cn.edu.thssdb.schema.Entry;
+import cn.edu.thssdb.type.ColumnType;
 import cn.edu.thssdb.type.ComparerType;
 import cn.edu.thssdb.type.ConditionType;
 import cn.edu.thssdb.type.ResultType;
@@ -109,6 +110,38 @@ public class SingleTable extends QueryTable implements Iterator<Row> {
 		}
 	}
 	
+	
+	/**
+	 * 描述：将待比较元素强制类型转换成主键元素
+	 * 参数：待比较元素
+	 * 返回：主键元素
+	 */
+	private Comparable SwitchType(Comparable const_value) {
+		int primary_index = mTable.GetPrimaryIndex();
+		ColumnType the_type = mTable.columns.get(primary_index).getType();
+		Comparable new_value = null;
+		String string_value = "" + const_value;
+		switch (the_type) {
+			case INT:
+				new_value = ((Number) const_value).intValue();
+				break;
+			case DOUBLE:
+				new_value = ((Number) const_value).doubleValue();
+				break;
+			case FLOAT:
+				new_value = ((Number) const_value).floatValue();
+				break;
+			case LONG:
+				new_value = ((Number) const_value).longValue();
+				break;
+			case STRING:
+				new_value = string_value;
+				break;
+		}
+		return new_value;
+	}
+	
+	
 	/**
 	 * 描述：用table的cache机制加速查找，仅限查找主键，单一逻辑，=的情况
 	 * 参数：待查找的主键value
@@ -118,7 +151,11 @@ public class SingleTable extends QueryTable implements Iterator<Row> {
 		if(!isFirst) {
 			return;
 		}
-		Row row = mTable.get(new Entry(const_value));
+		
+		int primary_index = mTable.GetPrimaryIndex();
+		ColumnType the_type = mTable.columns.get(primary_index).getType();
+		Comparable real_value = SwitchType(const_value);
+		Row row = mTable.get(new Entry(real_value));
 		JointRow the_row = new JointRow(row, mTable);
 		mQueue.add(the_row);
 	}
