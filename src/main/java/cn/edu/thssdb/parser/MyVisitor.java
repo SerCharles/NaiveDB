@@ -152,7 +152,7 @@ public class MyVisitor extends SQLBaseVisitor {
                 boolean found = false;
                 for (Column c : columns) {
                     if (c.getName().toLowerCase().equals(compositeName.toLowerCase())) {
-                        c.setPrimary(2);
+                        c.setPrimary(1);
                         found = true;
                     }
                 }
@@ -223,7 +223,7 @@ public class MyVisitor extends SQLBaseVisitor {
             try {
                 the_database.insert(table_name, column_names, values);
             } catch (Exception e) {
-                return e.getMessage();
+                return e.toString();
             }
         }
         return "Inserted " + ctx.value_entry().size() + " rows.";
@@ -239,14 +239,14 @@ public class MyVisitor extends SQLBaseVisitor {
             try {
                 return the_database.delete(table_name, null);
             } catch (Exception e) {
-                return e.getMessage();
+                return e.toString();
             }
         }
         Logic logic = visitMultiple_condition(ctx.multiple_condition());
         try {
             return the_database.delete(table_name, logic);
         } catch (Exception e) {
-            return e.getMessage();
+            return e.toString();
         }
     }
     
@@ -262,14 +262,14 @@ public class MyVisitor extends SQLBaseVisitor {
             try {
                 return the_database.update(table_name, column_name, value, null);
             } catch (Exception e) {
-                return e.getMessage();
+                return e.toString();
             }
         }
         Logic logic = visitMultiple_condition(ctx.multiple_condition());
         try {
             return the_database.update(table_name, column_name, value, logic);
         } catch (Exception e) {
-            return e.getMessage();
+            return e.toString();
         }
     }
     
@@ -303,7 +303,7 @@ public class MyVisitor extends SQLBaseVisitor {
         try {
             the_query_table = visitTable_query(ctx.table_query(0));
         } catch (Exception e) {
-            return e.getMessage();
+            return e.toString();
         }
         if(the_query_table == null) {
             throw new NoSelectedTableException();
@@ -316,7 +316,7 @@ public class MyVisitor extends SQLBaseVisitor {
         try {
             return the_database.select(columns_selected, the_query_table, logic, distinct);
         } catch (Exception e) {
-            return e.getMessage();
+            return e.toString();
         }
     }
     

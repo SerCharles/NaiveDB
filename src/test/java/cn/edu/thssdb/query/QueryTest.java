@@ -1,5 +1,6 @@
 package cn.edu.thssdb.query;
 
+import cn.edu.thssdb.parser.SQLHandler;
 import cn.edu.thssdb.schema.*;
 import cn.edu.thssdb.type.ColumnType;
 import cn.edu.thssdb.query.JointRow;
@@ -534,6 +535,10 @@ public class QueryTest {
         String[] test_value_4 = {"'sgl'", "4", "'THSS'"};
     
         //列不匹配测试2
+        String[] test_column_41 = {"name", "id", "age" };
+        String[] test_value_41 = {"'sgl'", "4", "21"};
+        
+        //列不匹配测试2
         String[] test_column_5 = {"name", "id", "dept" , "age"};
         String[] test_value_5 = {"5", "’lsj‘", "'THSS'", "20"};
         
@@ -556,7 +561,18 @@ public class QueryTest {
         //列不匹配测试--double 改成int
         String[] test_column_10 = {"rank", "gpa", "id"};
         String[] test_value_10 = {"1", "4", "4"};
-    
+        
+        //没有列测试1
+        String[] test_value_11 = {"11", "'kebab'", "'SPQR'", "1453"};
+        //没有列测试2
+        String[] test_value_12 = {"12", "'kebab'", "'SPQR'"};
+        //没有列测试3
+        String[] test_value_13 = {"13", "'kebab'", "1453", "'SPQR'"};
+        //没有列测试3
+        String[] test_value_14 = {"14", "'kebab'"};
+        //没有列测试1
+        String[] test_value_15 = {"15", "'kebab'", "'SPQR'", "1453","de"};
+        
         try {
             university.insert("student", test_column_1, test_value_1);
         }
@@ -589,6 +605,14 @@ public class QueryTest {
         }
         QueryTable query4 = new SingleTable(table1);
         System.out.println("test 4:" + university.select(null, query4, null, true));
+        try {
+            university.insert("student", test_column_41, test_value_41);
+        }
+        catch (Exception e) {
+            System.out.println(e.toString());
+        }
+        QueryTable query41 = new SingleTable(table1);
+        System.out.println("test 41:" + university.select(null, query41, null, true));
         try {
             university.insert("student", test_column_5, test_value_5);
         }
@@ -639,6 +663,53 @@ public class QueryTest {
         }
         QueryTable query10 = new SingleTable(table2);
         System.out.println("test 10:" + university.select(null, query10, null, true));
+    
+        try {
+            university.insert("student", null, test_value_11);
+        }
+        catch (Exception e) {
+            System.out.println(e.toString());
+        }
+        QueryTable query11 = new SingleTable(table1);
+        System.out.println("test 11:" + university.select(null, query11, null, true));
+    
+    
+        try {
+            university.insert("student", null, test_value_12);
+        }
+        catch (Exception e) {
+            System.out.println(e.toString());
+        }
+        QueryTable query12 = new SingleTable(table1);
+        System.out.println("test 12:" + university.select(null, query12, null, true));
+    
+        try {
+            university.insert("student", null, test_value_13);
+        }
+        catch (Exception e) {
+            System.out.println(e.toString());
+        }
+        QueryTable query13 = new SingleTable(table1);
+        System.out.println("test 13:" + university.select(null, query13, null, true));
+    
+        try {
+            university.insert("student", null, test_value_14);
+        }
+        catch (Exception e) {
+            System.out.println(e.toString());
+        }
+        QueryTable query14 = new SingleTable(table1);
+        System.out.println("test 15:" + university.select(null, query14, null, true));
+    
+        try {
+            university.insert("student", null, test_value_15);
+        }
+        catch (Exception e) {
+            System.out.println(e.toString());
+        }
+        QueryTable query15 = new SingleTable(table1);
+        System.out.println("test 15:" + university.select(null, query15, null, true));
+    
         manager.deleteDatabase("University");
     }
     
@@ -991,4 +1062,6 @@ public class QueryTest {
         }
         manager.deleteDatabase("University");
     }
+    
+
 }

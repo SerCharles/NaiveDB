@@ -221,7 +221,14 @@ public class Database {
      */
     public void insert(String table_name, String[] column_names, String[] values) {
         Table the_table = get(table_name);
-        the_table.insert(column_names, values);
+        if(column_names == null)
+        {
+            the_table.insert(values);
+        }
+        else
+        {
+            the_table.insert(column_names, values);
+        }
     }
     
     /**

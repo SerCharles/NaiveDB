@@ -247,28 +247,84 @@ public class Table implements Iterable<Row> {
         
         // match columns and reorder entries
         int schemaLen = this.columns.size();
-        if (columns.length != schemaLen || values.length != schemaLen)
+        if (columns.length > schemaLen) {
             throw new SchemaLengthMismatchException(schemaLen, columns.length);
+        }
+        else if(values.length > schemaLen) {
+            throw new SchemaLengthMismatchException(schemaLen, values.length);
+        }
+        else if (columns.length != values.length) {
+            throw new SchemaLengthMismatchException(columns.length, values.length);
+        }
         ArrayList<Entry> orderedEntries = new ArrayList<>();
         for (Column column : this.columns)
         {
-            boolean isMatched = false;
-            for (int i = 0; i < schemaLen; i++)
+            int equal_num = 0;
+            int place = -1;
+            for (int i = 0; i < values.length; i++)
             {
                 if (columns[i].equals(column.getName().toLowerCase()))
                 {
-                    Comparable the_entry_value = ParseValue(column, values[i]);
-                    JudgeValid(column, the_entry_value);
-                    Entry the_entry = new Entry(the_entry_value);
-                    orderedEntries.add(the_entry);
-                    isMatched = true;
-                    break;
+                    place = i;
+                    equal_num ++;
                 }
             }
-            if (!isMatched)
+            if (equal_num > 1)
             {
-                throw new SchemaMismatchException(column.toString());
+                throw new DuplicateColumnException(column.toString());
             }
+            Comparable the_entry_value = null;
+            if (equal_num == 0 || place < 0 || place >= columns.length)
+            {
+                the_entry_value = null;
+            }
+            else{
+                the_entry_value = ParseValue(column, values[place]);
+            }
+            JudgeValid(column, the_entry_value);
+            Entry the_entry = new Entry(the_entry_value);
+            orderedEntries.add(the_entry);
+        }
+        
+        // write to cache
+        try {
+            lock.writeLock().lock();
+            cache.insertRow(orderedEntries, primaryIndex);
+        }
+        catch (DuplicateKeyException e) {
+            throw e;
+        }
+        finally {
+            lock.writeLock().unlock();
+        }
+    }
+    
+    /**
+     * 描述：用于sql parser的插入函数
+     * 参数：value数组，string形式
+     * 返回：无，如果不合法会抛出异常
+     */
+    public void insert(String[] values) {
+        if (values == null)
+            throw new SchemaLengthMismatchException(this.columns.size(), 0);
+    
+        // match columns and reorder entries
+        int schemaLen = this.columns.size();
+        if(values.length > schemaLen) {
+            throw new SchemaLengthMismatchException(schemaLen, values.length);
+        }
+        
+        ArrayList<Entry> orderedEntries = new ArrayList<>();
+        for (int i = 0; i < this.columns.size(); i ++)
+        {
+            Column column = this.columns.get(i);
+            Comparable the_entry_value = null;
+            if(i >= 0 && i < values.length) {
+                the_entry_value = ParseValue(column, values[i]);
+            }
+            JudgeValid(column, the_entry_value);
+            Entry the_entry = new Entry(the_entry_value);
+            orderedEntries.add(the_entry);
         }
         
         // write to cache
