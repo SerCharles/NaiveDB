@@ -202,7 +202,13 @@ public class Database {
         // 迭代值
         String Top = "Database Name: " + name;
         String result = Top + "\n" + "\n";
+        if(tables.isEmpty()) {
+            return "Empty database!";
+        }
         for (Table the_table : tables.values()) {
+            if(the_table == null) {
+                continue;
+            }
             result += the_table.ToString();
         }
         return result;

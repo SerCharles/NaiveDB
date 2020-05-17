@@ -159,6 +159,10 @@ public class Table implements Iterable<Row> {
      * 描述：将comparer类型的value转换成column的类型
      * 参数：column，value
      * 返回：新的值--comparable，如果不匹配会抛出异常
+     * 如果value是null,判断是否符合可空规则
+     * 如果value是column，报错
+     * 如果column是数字，value是string，或者相反，报错
+     * 如果column和value都是数字，value强制类型转换成column类型，比如你把id：int改成5.01，那变成5
      */
     private Comparable ParseValue(Column the_column, Comparer value) {
         if (value == null || value.mValue == null ||value.mType == ComparerType.NULL) {
@@ -170,16 +174,44 @@ public class Table implements Iterable<Row> {
             }
         }
         String string_value = value.mValue + "";
+        if(value.mType == ComparerType.COLUMN) {
+            if(the_column.getType().equals(ColumnType.STRING)) {
+                throw new TypeNotMatchException(ComparerType.COLUMN, ComparerType.STRING);
+            }
+            else {
+                throw new TypeNotMatchException(ComparerType.COLUMN, ComparerType.NUMBER);
+            }
+        }
+        
         switch (the_column.getType()) {
             case DOUBLE:
+                if(value.mType == ComparerType.STRING) {
+                    throw new TypeNotMatchException(ComparerType.STRING, ComparerType.NUMBER);
+                }
                 return Double.parseDouble(string_value);
             case INT:
-                return Integer.parseInt(string_value);
+                if(value.mType == ComparerType.STRING) {
+                    throw new TypeNotMatchException(ComparerType.STRING, ComparerType.NUMBER);
+                }
+                double double_value = Double.parseDouble(string_value);
+                int int_value = (int)double_value;
+                return Integer.parseInt(int_value + "");
             case FLOAT:
+                if(value.mType == ComparerType.STRING) {
+                    throw new TypeNotMatchException(ComparerType.STRING, ComparerType.NUMBER);
+                }
                 return Float.parseFloat(string_value);
             case LONG:
-                return Long.parseLong(string_value);
+                if(value.mType == ComparerType.STRING) {
+                    throw new TypeNotMatchException(ComparerType.STRING, ComparerType.NUMBER);
+                }
+                double double_value_2 = Double.parseDouble(string_value);
+                long long_value = (long)double_value_2;
+                return Long.parseLong(long_value + "");
             case STRING:
+                if(value.mType == ComparerType.NUMBER) {
+                    throw new TypeNotMatchException(ComparerType.STRING, ComparerType.NUMBER);
+                }
                 return string_value;
         }
         return null;
@@ -473,6 +505,9 @@ public class Table implements Iterable<Row> {
         String top = "Column Name, Column Type, Primary, Is Null, Max Length";
         String result = "Table Name: " + name + "\n" + top + "\n";
         for(Column column : this.columns) {
+            if(column == null) {
+                continue;
+            }
             result = result + column.toString() + "\n";
         }
         return result;
