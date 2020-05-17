@@ -3,11 +3,9 @@ package cn.edu.thssdb.schema;
 import cn.edu.thssdb.exception.DuplicateTableException;
 import cn.edu.thssdb.exception.FileIOException;
 import cn.edu.thssdb.exception.TableNotExistException;
-import cn.edu.thssdb.query.QueryResult;
+import cn.edu.thssdb.query.*;
 import cn.edu.thssdb.type.ColumnType;
-import cn.edu.thssdb.query.QueryTable;
 import cn.edu.thssdb.query.QueryResult;
-import cn.edu.thssdb.query.Logic;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -185,12 +183,21 @@ public class Database {
         }
     }
     
-    
+    /**
+     * 描述：显示数据库单一表信息
+     * 参数：无
+     * 返回：string，单一表信息
+     */
     public String ShowOneTable(String tableName) {
         Table table = get(tableName);
         return table.ToString();
     }
     
+    /**
+     * 描述：显示整个数据库信息
+     * 参数：无
+     * 返回：string，数据库信息
+     */
     public String ToString() {
         // 迭代值
         String Top = "Database Name: " + name;
@@ -201,19 +208,71 @@ public class Database {
         return result;
     }
     
+    /**
+     * 描述：处理插入元素
+     * 参数：table name，待插入列名，待插入的值（string）
+     * 返回：无
+     */
     public void insert(String table_name, String[] column_names, String[] values) {
         Table the_table = get(table_name);
         the_table.insert(column_names, values);
     }
     
-    
+    /**
+     * 描述：处理删除元素
+     * 参数：table name，删除逻辑
+     * 返回：描述性语句
+     */
     public String delete(String table_name, Logic the_logic) {
         Table the_table = get(table_name);
         return the_table.delete(the_logic);
     }
     
-    public String update(String table_name, String column_name, String value, Logic the_logic) {
+    /**
+     * 描述：处理更新元素
+     * 参数：table name，待更新的单一列名，待更新的值，符合条件
+     * 返回：描述性语句
+     */
+    public String update(String table_name, String column_name, Comparer value, Logic the_logic) {
         Table the_table = get(table_name);
         return the_table.update(column_name, value, the_logic);
     }
+    
+    /**
+    * 描述：建立单一querytable
+     * 参数：table name
+     * 返回：querytable
+     */
+    public QueryTable BuildSingleQueryTable(String table_name) {
+        try {
+            lock.readLock().lock();
+            if (tables.containsKey(table_name)) {
+                return new SingleTable(tables.get(table_name));
+            }
+        } finally {
+            lock.readLock().unlock();
+        }
+        throw new TableNotExistException(table_name);
+    }
+    
+    /**
+     * 描述：建立复合querytable
+     * 参数：table names，join逻辑
+     * 返回：querytable
+     */
+    public QueryTable BuildJointQueryTable(ArrayList<String> table_names, Logic logic) {
+        ArrayList<Table> my_tables = new ArrayList<>();
+        try {
+            lock.readLock().lock();
+            for (String table_name : table_names) {
+                if (!tables.containsKey(table_name))
+                    throw new TableNotExistException(table_name);
+                my_tables.add(tables.get(table_name));
+            }
+        } finally {
+            lock.readLock().unlock();
+        }
+        return new JointTable(my_tables, logic);
+    }
 }
+

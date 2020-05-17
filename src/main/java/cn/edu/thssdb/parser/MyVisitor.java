@@ -1,9 +1,6 @@
 package  cn.edu.thssdb.parser;
 
-import cn.edu.thssdb.exception.AttributeNotFoundException;
-import cn.edu.thssdb.exception.DatabaseNotExistException;
-import cn.edu.thssdb.exception.NotImplementedException;
-import cn.edu.thssdb.exception.ValueFormatException;
+import cn.edu.thssdb.exception.*;
 import cn.edu.thssdb.schema.*;
 import javafx.util.Pair;
 import cn.edu.thssdb.query.*;
@@ -12,6 +9,9 @@ import cn.edu.thssdb.type.*;
 import java.util.ArrayList;
 import java.util.StringJoiner;
 
+/**
+ * 描述:sql语义分析类
+ */
 public class MyVisitor extends SQLBaseVisitor {
     private Manager manager;
 
@@ -257,7 +257,7 @@ public class MyVisitor extends SQLBaseVisitor {
         Database the_database = GetCurrentDB();
         String table_name = ctx.table_name().getText().toLowerCase();
         String column_name = ctx.column_name().getText().toLowerCase();
-        String value = visitExpression(ctx.expression());
+        Comparer value = visitExpression(ctx.expression());
         if (ctx.K_WHERE() == null) {
             try {
                 return the_database.update(table_name, column_name, value, null);
@@ -278,32 +278,43 @@ public class MyVisitor extends SQLBaseVisitor {
      * 描述：处理查询元素
      */
     public String visitSelect_stmt(SQLParser.Select_stmtContext ctx) {
+        Database the_database = GetCurrentDB();
         boolean distinct = false;
         if (ctx.K_DISTINCT() != null)
             distinct = true;
-        int columnCount = ctx.result_column().size();
-        String[] columnsProjected = new String[columnCount];
-        for (int i = 0; i < columnCount; i++) {
-            String columnName = ctx.result_column(i).getText().toLowerCase();
-            if (columnName.equals("*")) {
-                columnsProjected = null;
+        int column_count = ctx.result_column().size();
+        String[] columns_selected = new String[column_count];
+        //获取select的列名
+        for (int i = 0; i < column_count; i++) {
+            String column_name = ctx.result_column(i).getText().toLowerCase();
+            if (column_name.equals("*")) {
+                columns_selected = null;
                 break;
             }
-            columnsProjected[i] = columnName;
+            columns_selected[i] = column_name;
         }
-        int queryCount = ctx.table_query().size();
-        QueryTable[] queryTables = new QueryTable[queryCount];
+        
+        //获取from的table，建立querytable
+        int query_count = ctx.table_query().size();
+        if(query_count == 0) {
+            throw new NoSelectedTableException();
+        }
+        QueryTable the_query_table = null;
         try {
-            for (int i = 0; i < queryCount; i++)
-                queryTables[i] = visitTable_query(ctx.table_query(i));
+            the_query_table = visitTable_query(ctx.table_query(0));
         } catch (Exception e) {
             return e.getMessage();
         }
+        if(the_query_table == null) {
+            throw new NoSelectedTableException();
+        }
+        
+        //建立逻辑，获得结果
         Logic logic = null;
         if (ctx.K_WHERE() != null)
             logic = visitMultiple_condition(ctx.multiple_condition());
         try {
-            return manager.select(columnsProjected, queryTables, logic, distinct);
+            return the_database.select(columns_selected, the_query_table, logic, distinct);
         } catch (Exception e) {
             return e.getMessage();
         }
@@ -389,11 +400,14 @@ public class MyVisitor extends SQLBaseVisitor {
         }
         return null;
     }
-
+    
+    /**
+     * 描述：处理逻辑建立
+     */
     public Condition visitCondition(SQLParser.ConditionContext ctx) {
-        Expression left = visitExpression(ctx.expression(0));
-        Expression right = visitExpression(ctx.expression(1));
-        ComparatorType type = visitComparator(ctx.comparator());
+        Comparer left = visitExpression(ctx.expression(0));
+        Comparer right = visitExpression(ctx.expression(1));
+        ConditionType type = visitComparator(ctx.comparator());
         return new Condition(left, right, type);
     }
     
@@ -421,19 +435,28 @@ public class MyVisitor extends SQLBaseVisitor {
         }
         return null;
     }
-
-    public Integer visitAuth_level(SQLParser.Auth_levelContext ctx) {
-        throw new NotImplementedException();
-    }
-
-    public String visitExpression(SQLParser.ExpressionContext ctx) {
-        throw new NotImplementedException();
+    
+    /**
+     * 描述：本应该是得到算术表达式，但是因为没有实现算术表达式，所以直接返回数值
+     */
+    public Comparer visitExpression(SQLParser.ExpressionContext ctx) {
+        if (ctx.comparer() != null) {
+            return visitComparer(ctx.comparer());
+        }
+        else {
+            return null;
+        }
     }
     
-    
+    /**
+     *描述：读取一个comparer，值+类型
+     */
     public Comparer visitComparer(SQLParser.ComparerContext ctx) {
-        if (ctx.column_full_name() != null)
+        //处理column情况
+        if (ctx.column_full_name() != null) {
             return new Comparer(ComparerType.COLUMN, ctx.column_full_name().getText());
+        }
+        //获得类型和内容
         LiteralType type = visitLiteral_value(ctx.literal_value());
         String text = ctx.literal_value().getText();
         switch (type) {
@@ -447,7 +470,7 @@ public class MyVisitor extends SQLBaseVisitor {
                 return null;
         }
     }
-
+    
     /**
      *处理表定义的限制
      */
@@ -459,30 +482,60 @@ public class MyVisitor extends SQLBaseVisitor {
         }
         return composite_names;
     }
-
-    private QueryTable visitTable_query(SQLParser.Table_queryContext ctx, Context context) {
-        if (ctx.K_JOIN().size() == 0)
-            return manager.getSingleJointTable(ctx.table_name(0).getText().toLowerCase(), context);
-        Logic logic = visitMultiple_condition(ctx.multiple_condition());
-        ArrayList<String> tableNames = new ArrayList<>();
-        for (SQLParser.Table_nameContext subCtx : ctx.table_name())
-            tableNames.add(subCtx.getText().toLowerCase());
-        return manager.getMultipleJointTable(tableNames, logic, context);
+    
+    /**
+     *描述：获取querytable
+     */
+    public QueryTable visitTable_query(SQLParser.Table_queryContext ctx) {
+        Database the_database = GetCurrentDB();
+        //单一表
+        if (ctx.K_JOIN().size() == 0) {
+            return the_database.BuildSingleQueryTable(ctx.table_name(0).getText().toLowerCase());
+        }
+        //复合表，需要读取join逻辑
+        else {
+            Logic logic = visitMultiple_condition(ctx.multiple_condition());
+            ArrayList<String> table_names = new ArrayList<>();
+            for (SQLParser.Table_nameContext subCtx : ctx.table_name()) {
+                table_names.add(subCtx.getText().toLowerCase());
+            }
+            return the_database.BuildJointQueryTable(table_names, logic);
+        }
     }
 
-    public String visitLiteral_value(SQLParser.Literal_valueContext ctx) {
-        throw new NotImplementedException();
+    /**
+    *描述：获取单一数值的类型
+     */
+    public LiteralType visitLiteral_value(SQLParser.Literal_valueContext ctx) {
+        if (ctx.NUMERIC_LITERAL() != null) {
+            return LiteralType.NUMBER;
+        }
+        if (ctx.STRING_LITERAL() != null) {
+            return LiteralType.STRING;
+        }
+        if (ctx.K_NULL() != null) {
+            return LiteralType.NULL;
+        }
+        return null;
     }
-
+    
+    /**
+     *描述：处理复合逻辑
+     */
     public Logic visitMultiple_condition(SQLParser.Multiple_conditionContext ctx) {
+        //单一条件
         if (ctx.condition() != null)
             return new Logic(visitCondition(ctx.condition()));
-        LogicalOpType logicalOpType;
-        if (ctx.AND() != null)
-            logicalOpType = LogicalOpType.AND;
-        else
-            logicalOpType = LogicalOpType.OR;
+        
+        //复合逻辑
+        LogicType logic_type;
+        if (ctx.AND() != null) {
+            logic_type = LogicType.AND;
+        }
+        else {
+            logic_type = LogicType.OR;
+        }
         return new Logic(visitMultiple_condition(ctx.multiple_condition(0)),
-                visitMultiple_condition(ctx.multiple_condition(1)), logicalOpType);
+                visitMultiple_condition(ctx.multiple_condition(1)), logic_type);
     }
 }

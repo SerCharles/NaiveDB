@@ -5,9 +5,11 @@ import cn.edu.thssdb.exception.*;
 import cn.edu.thssdb.index.BPlusTree;
 import static cn.edu.thssdb.utils.Global.*;
 
+import cn.edu.thssdb.query.Comparer;
 import cn.edu.thssdb.query.JointRow;
 import cn.edu.thssdb.query.Logic;
 import cn.edu.thssdb.type.ColumnType;
+import cn.edu.thssdb.type.ComparerType;
 import cn.edu.thssdb.type.ResultType;
 import javafx.util.Pair;
 
@@ -154,6 +156,36 @@ public class Table implements Iterable<Row> {
     }
     
     /**
+     * 描述：将comparer类型的value转换成column的类型
+     * 参数：column，value
+     * 返回：新的值--comparable，如果不匹配会抛出异常
+     */
+    private Comparable ParseValue(Column the_column, Comparer value) {
+        if (value == null || value.mValue == null ||value.mType == ComparerType.NULL) {
+            if (the_column.NotNull()) {
+                throw new NullValueException(the_column.getName());
+            }
+            else {
+                return null;
+            }
+        }
+        String string_value = value.mValue + "";
+        switch (the_column.getType()) {
+            case DOUBLE:
+                return Double.parseDouble(string_value);
+            case INT:
+                return Integer.parseInt(string_value);
+            case FLOAT:
+                return Float.parseFloat(string_value);
+            case LONG:
+                return Long.parseLong(string_value);
+            case STRING:
+                return string_value;
+        }
+        return null;
+    }
+    
+    /**
      * 描述：判断value是否合法，符合column规则，这里只判断null和max length
      * 参数：column，value
      * 返回：无，如果不合法会抛出异常
@@ -295,7 +327,7 @@ public class Table implements Iterable<Row> {
      * 参数：待更新列名，待更新值（string类型），逻辑
      * 返回：字符串，表明更新了多少数据
      */
-    public String update(String column_name, String value, Logic the_logic) {
+    public String update(String column_name, Comparer value, Logic the_logic) {
         int count = 0;
         for(Row row : this) {
             JointRow the_row = new JointRow(row, this);
@@ -317,6 +349,7 @@ public class Table implements Iterable<Row> {
                 
                 //值处理，合法性判断
                 Comparable the_entry_value = ParseValue(the_column, value);
+                
                 JudgeValid(the_column, the_entry_value);
                 
                 //插入
@@ -414,7 +447,11 @@ public class Table implements Iterable<Row> {
         return rows;
     }
     
-    
+    /**
+     * 描述：获得主键名称
+     * 参数：无
+     * 返回：主键名称，如果没有就null
+     */
     public String GetPrimaryName() {
         if(this.primaryIndex < 0 || this.primaryIndex >= this.columns.size()) {
             return null;
@@ -426,6 +463,11 @@ public class Table implements Iterable<Row> {
         return this.primaryIndex;
     }
     
+    /**
+     * 描述：显示整个表信息
+     * 参数：无
+     * 返回：string，表信息
+     */
     public String ToString() {
         String name = this.tableName;
         String top = "Column Name, Column Type, Primary, Is Null, Max Length";
