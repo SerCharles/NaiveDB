@@ -37,6 +37,9 @@ public class Table implements Iterable<Row> {
             if (this.columns.get(i).getPrimary() == 1)
                 primaryIndex = i;
         }
+        if(primaryIndex < 0 || primaryIndex >= this.columns.size()) {
+            throw new PrimaryNotExistException(tableName);
+        }
         //this.index = new BPlusTree<>();
 //        System.out.println(primaryIndex);
         this.cache = new Cache(databaseName, tableName);

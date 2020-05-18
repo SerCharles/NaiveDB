@@ -132,6 +132,10 @@ public class JointRow extends Row {
         }
         comparer_type = GetComparerType(column_type);
         Comparable comparer_value = this.entries.get(index).value;
+        
+        if(comparer_value == null){
+            return new Comparer(ComparerType.NULL, null);
+        }
         Comparer the_comparer = new Comparer(comparer_type, "" + comparer_value);
         return the_comparer;
     }

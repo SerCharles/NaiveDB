@@ -145,6 +145,77 @@ public class SQLTest {
 	 */
 	@Test
 	public void SearchTest() {
-	
+		//准备
+		System.out.println(handler.evaluate("create database university"));
+		System.out.println(handler.evaluate("create table student (name string(10) not null, id int, dept string(10) not null, age int, primary key(id))"));
+		System.out.println(handler.evaluate("create table grade (id int, gpa double not null, rank int, primary key(id))"));
+		System.out.println(handler.evaluate("create table department (dept_name string(10), involution double)"));
+		System.out.println(handler.evaluate("create table department (dept_name string(10), involution double, primary key(dept_name))"));
+		System.out.println(handler.evaluate("show database university"));
+		System.out.println(handler.evaluate("insert into student values ('sgl',1,'THSS',22)"));
+		System.out.println(handler.evaluate("insert into student values ('sj',2,'THSS')"));
+		System.out.println(handler.evaluate("insert into student values ('borkball',3,'CST',21)"));
+		System.out.println(handler.evaluate("insert into grade values (1, 3.81, 8)"));
+		System.out.println(handler.evaluate("insert into grade values (2, 3.6)"));
+		System.out.println(handler.evaluate("insert into grade values (3, 3.71, 28)"));
+		System.out.println(handler.evaluate("insert into department values ('THSS')"));
+		System.out.println(handler.evaluate("insert into department values ('CST', 99.999)"));
+		
+		//单表无条件
+		String select1 = "select * from student";
+		String select2 = "select dept, student.name from student";
+		//不合法列
+		String select3 = "select kebab from student";
+		String select4 = "select kebab.name from student";
+		//单表单一条件
+		String select5 = "select * from student where name = 'sgl'";
+		String select6 = "select dept, student.name from student where name < 22";
+		//单表复合条件
+		String select7 = "select * from student where name = 'sgl' || name > 'sgl' && 'THSS' = dept";
+		String select8 = "select dept, student.name from student where student.age < 22 && 3 < 4.1 && id < age";
+		String select81 = "select dept, student.name from student where student.age < 22";
+		String select82 = "select dept, student.name from student where age > id";
+		
+		//条件不合法
+		String select9 = "select * from student where name = 21";
+		String select10 = "select * from student where 1 = 2";
+		String select11 = "select * from student where kebab = 21";
+		String select12 = "select * from student where kebab = 21";
+		
+		//两表join
+		String select13 = "select * from student join grade on student.id = grade.id";
+		String select14 = "select name, gpa from student join grade on student.id = grade.id where gpa > 3.7";
+		String select15 = "select name, gpa from student join grade on student.id = grade.id where gpa < 3.7 || rank < 10";
+		String select16 = "select name, gpa from student join grade on student.id = grade.id where id = 1";
+		
+		//三表join
+		String select17 = "select * from student join grade join department on student.id = grade.id && dept_name = dept";
+		String select18 = "select dept_name from student join grade join department on student.id = grade.id && dept_name = dept";
+		String select19 = "select distinct dept_name from student join grade join department on student.id = grade.id && dept_name = dept";
+		String select20 = "select * from student join grade join department on student.id = grade.id && dept_name = dept where gpa > 3.8 || name = 'sj'";
+		
+		System.out.println(handler.evaluate(select1));
+		System.out.println(handler.evaluate(select2));
+		System.out.println(handler.evaluate(select3));
+		System.out.println(handler.evaluate(select4));
+		System.out.println(handler.evaluate(select5));
+		System.out.println(handler.evaluate(select6));
+		System.out.println(handler.evaluate(select7));
+		System.out.println(handler.evaluate(select8));
+		System.out.println(handler.evaluate(select81));
+		System.out.println(handler.evaluate(select82));
+		System.out.println(handler.evaluate(select9));
+		System.out.println(handler.evaluate(select10));
+		System.out.println(handler.evaluate(select11));
+		System.out.println(handler.evaluate(select12));
+		System.out.println(handler.evaluate(select13));
+		System.out.println(handler.evaluate(select14));
+		System.out.println(handler.evaluate(select15));
+		System.out.println(handler.evaluate(select16));
+		System.out.println(handler.evaluate(select17));
+		System.out.println(handler.evaluate(select18));
+		System.out.println(handler.evaluate(select19));
+		System.out.println(handler.evaluate(select20));
+		System.out.println(handler.evaluate("drop database university"));
 	}
 }

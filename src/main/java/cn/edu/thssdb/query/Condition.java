@@ -31,7 +31,8 @@ public class Condition {
      */
     public ResultType GetResult(JointRow the_row) {
         //null和啥比较都是unknown
-        if(mLeft.mType == ComparerType.NULL || mRight.mType == ComparerType.NULL)
+        if(mLeft.mType == ComparerType.NULL || mRight.mType == ComparerType.NULL
+                || mLeft == null || mRight == null || mLeft.mValue == null || mRight.mValue == null)
         {
             return ResultType.UNKNOWN;
         }
@@ -53,6 +54,12 @@ public class Condition {
                 value_right = right_comparer.mValue;
                 type_right = right_comparer.mType;
             }
+            
+            //null不判断
+            if(type_left == ComparerType.NULL || type_right == ComparerType.NULL || value_left == null || value_right == null) {
+                return ResultType.UNKNOWN;
+            }
+            
             //待比较的类型不一样，报错
             if(type_left != type_right)
             {
@@ -102,7 +109,8 @@ public class Condition {
      */
     public ResultType GetResult() {
         //null和啥比较都是unknown
-        if(mLeft.mType == ComparerType.NULL || mRight.mType == ComparerType.NULL)
+        if(mLeft.mType == ComparerType.NULL || mRight.mType == ComparerType.NULL
+                || mLeft == null || mRight == null || mLeft.mValue == null || mRight.mValue == null)
         {
             return ResultType.UNKNOWN;
         }
