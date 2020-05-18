@@ -138,15 +138,18 @@ public class SQLTest {
 		System.out.println(handler.evaluate("show database turkey"));
 		System.out.println(handler.evaluate("drop database turkey"));
 		
+
+		
 	}
 	
 	/**
-	 * 描述：测试sql语句（数据库建立，删除，切换，输出；表建立，删除，输出，简单查询，增删改）
+	 * 描述：测试sql语句（复杂查询）
 	 */
 	@Test
 	public void SearchTest() {
-		//准备
+		//查询测试
 		System.out.println(handler.evaluate("create database university"));
+		System.out.println(handler.evaluate("use university"));
 		System.out.println(handler.evaluate("create table student (name string(10) not null, id int, dept string(10) not null, age int, primary key(id))"));
 		System.out.println(handler.evaluate("create table grade (id int, gpa double not null, rank int, primary key(id))"));
 		System.out.println(handler.evaluate("create table department (dept_name string(10), involution double)"));
