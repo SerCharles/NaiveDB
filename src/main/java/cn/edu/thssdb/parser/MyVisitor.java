@@ -524,6 +524,8 @@ public class MyVisitor extends SQLBaseVisitor {
      */
     public Logic visitMultiple_condition(SQLParser.Multiple_conditionContext ctx) {
         //单一条件
+        Object a = ctx.multiple_condition(0);
+        Object b = ctx.AND();
         if (ctx.condition() != null)
             return new Logic(visitCondition(ctx.condition()));
         
