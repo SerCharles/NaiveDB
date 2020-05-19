@@ -13,7 +13,7 @@ public class AttributeCollisionException extends RuntimeException{
     }
     @Override
     public String getMessage() {
-        return "Attribute " + mName + " exists in more than one tables!\n"
+        return "Exception: Attribute " + mName + " exists in more than one tables!\n"
                 + "Try the format of TableName.AttributeName!";
     }
 }

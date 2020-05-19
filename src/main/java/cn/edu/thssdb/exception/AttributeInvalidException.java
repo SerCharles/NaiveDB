@@ -14,6 +14,6 @@ public class AttributeInvalidException extends RuntimeException{
     }
     @Override
     public String getMessage() {
-        return "Attribute " + mName + " is invalid!";
+        return "Exception: Attribute " + mName + " is invalid!";
     }
 }

@@ -11,6 +11,6 @@ public class OtherException extends RuntimeException{
 	}
 	@Override
 	public String getMessage() {
-		return "Unknown error!";
+		return "Exception: Unknown error!";
 	}
 }

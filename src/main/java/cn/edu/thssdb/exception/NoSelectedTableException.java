@@ -11,6 +11,6 @@ public class NoSelectedTableException extends RuntimeException{
 	}
 	@Override
 	public String getMessage() {
-		return "You have not selected any table to search!";
+		return "Exception: You have not selected any table to search!";
 	}
 }

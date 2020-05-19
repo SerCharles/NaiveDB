@@ -1,7 +1,6 @@
 package cn.edu.thssdb.client;
 
-import cn.edu.thssdb.rpc.thrift.GetTimeReq;
-import cn.edu.thssdb.rpc.thrift.IService;
+import cn.edu.thssdb.rpc.thrift.*;
 import cn.edu.thssdb.utils.Global;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -41,7 +40,10 @@ public class Client {
   private static TProtocol protocol;
   private static IService.Client client;
   private static CommandLine commandLine;
-
+  
+  //TODO 这个类一堆static我觉得有问题，不能支持多个客户端，但是不知道具体咋整
+  private static long session = -1;
+  
   public static void main(String[] args) {
     commandLine = parseCmd(args);
     if (commandLine.hasOption(HELP_ARGS)) {
@@ -68,8 +70,14 @@ public class Client {
           case Global.QUIT:
             open = false;
             break;
+          case Global.CONNECT:
+            connect();
+            break;
+          case Global.DISCONNECT:
+            disconnect();
+            break;
           default:
-            println("Invalid statements!");
+            executeStatement(msg.trim());
             break;
         }
         long endTime = System.currentTimeMillis();
@@ -92,7 +100,76 @@ public class Client {
       logger.error(e.getMessage());
     }
   }
+  
+  /**
+  描述：连接服务器，其实就是获取一个可用session，session<0是没有session，>=0是有
+   */
+  private static void connect() {
+    if(session >= 0)  {
+      println("Already connected!");
+      return;
+    }
+    ConnectReq the_request = new ConnectReq(Global.USERNAME, Global.PASSWORD);
+    try {
+      ConnectResp the_respond = client.connect(the_request);
+      println(the_respond.toString());
+      if(the_respond.getStatus().code == Global.SUCCESS_CODE) {
+        session = the_respond.getSessionId();
+      }
+    } catch (TException e) {
+      logger.error(e.getMessage());
+    }
+  }
+  
+  /**
+   描述：断开服务器，session设置-1
+   */
+  private static void disconnect() {
+    if(session < 0)  {
+      println("Not connected yet!");
+      return;
+    }
+    DisconnetResp the_request = new DisconnetResp();
+    the_request.setStatus(new Status(Global.SUCCESS_CODE));
+    try {
+      DisconnetResp the_respond = client.disconnect(the_request);
+      println(the_respond.toString());
+      if(the_respond.getStatus().code == Global.SUCCESS_CODE) {
+        session = -1;
+      }
+    } catch (TException e) {
+      logger.error(e.getMessage());
+    }
+  }
+  
+  /**
+   描述：执行语句，显示结果
+   */
+  private static void executeStatement(String message) {
+    if(session < 0)  {
+      println("Not connected yet!");
+      return;
+    }
+    ExecuteStatementReq the_request = new ExecuteStatementReq();
+    the_request.setStatement(message);
+    the_request.setSessionId(session);
+    try {
+      ExecuteStatementResp the_response = client.executeStatement(the_request);
+      if(the_response.getStatus().code == Global.FAILURE_CODE) {
+        println("Failure!");
+        println(the_response.getStatus().msg);
+      }
+      else {
+        println("Success!");
+        println(the_response.rowList.get(0).get(0));
+      }
+    } catch (TException e) {
+      logger.error(e.getMessage());
+    }
+  }
 
+  
+  
   static Options createOptions() {
     Options options = new Options();
     options.addOption(Option.builder(HELP_ARGS)
@@ -134,8 +211,13 @@ public class Client {
   }
 
   static void showHelp() {
-    // TODO
-    println("DO IT YOURSELF");
+    println("If you want to get the time: show time;");
+    println("If you want to connect: connect;");
+    println("If you want to disconnect: disconnect;");
+    println("If you want to quit: quit;");
+    println("If you want to execute sql statements, just type the one you want in a line.");
+    println("For example: select name, dept_name from student where name == 'sgl' && id > 3");
+  
   }
 
   static void echoStarting() {

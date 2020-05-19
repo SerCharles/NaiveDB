@@ -48,7 +48,7 @@ public class TypeNotMatchException extends RuntimeException {
                 message2 = "Null";
                 break;
         }
-        return "Type 1 " + message1 + " and " + "type 2 " + message2 + " do not match!";
+        return "Exception: Type 1 " + message1 + " and " + "type 2 " + message2 + " do not match!";
     }
 
 }

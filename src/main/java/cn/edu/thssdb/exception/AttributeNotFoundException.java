@@ -13,6 +13,6 @@ public class AttributeNotFoundException extends RuntimeException{
     }
     @Override
     public String getMessage() {
-        return "Attribute " + mName + " does not exist!";
+        return "Exception: Attribute " + mName + " does not exist!";
     }
 }

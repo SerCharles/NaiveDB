@@ -11,6 +11,6 @@ public class NotImplementedException extends RuntimeException{
 	}
 	@Override
 	public String getMessage() {
-		return "Not implemented!";
+		return "Exception: Not implemented!";
 	}
 }

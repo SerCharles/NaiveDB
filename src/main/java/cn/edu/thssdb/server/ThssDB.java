@@ -11,6 +11,7 @@ import org.apache.thrift.transport.TTransportException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+
 public class ThssDB {
 
   private static final Logger logger = LoggerFactory.getLogger(ThssDB.class);
