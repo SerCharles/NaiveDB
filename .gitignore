@@ -102,3 +102,5 @@ buildNumber.properties
 .settings
 .metadata
 ThssDB.iml
+.history*
+*.antlr*
