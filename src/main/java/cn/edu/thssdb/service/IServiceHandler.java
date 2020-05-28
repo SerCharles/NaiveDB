@@ -41,7 +41,6 @@ public class IServiceHandler implements IService.Iface {
    */
   public ConnectResp connect(ConnectReq req) throws TException {
     System.out.println("username: " + req.username + "\npassword: " + req.password);
-    
     //分配新的session
     long new_session = currentSession;
     currentSession ++;

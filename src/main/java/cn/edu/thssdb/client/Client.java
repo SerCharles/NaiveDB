@@ -19,6 +19,11 @@ import org.slf4j.LoggerFactory;
 
 import java.io.PrintStream;
 import java.util.Scanner;
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.Socket;
+import java.net.UnknownHostException;
+import java.util.Random;
 
 public class Client {
 
@@ -41,9 +46,30 @@ public class Client {
   private static IService.Client client;
   private static CommandLine commandLine;
   
-  //TODO 这个类一堆static我觉得有问题，不能支持多个客户端，但是不知道具体咋整
+//解决多客户端问题
   private static long session = -1;
-  
+
+  public static boolean isLoclePortUsing(int port){
+    boolean flag = true;
+    try {
+      flag = isPortUsing("127.0.0.1", port);
+    } catch (Exception e) {
+    }
+    return flag;
+  }
+
+  public static boolean isPortUsing(String host,int port) throws UnknownHostException{
+    boolean flag = false;
+    InetAddress theAddress = InetAddress.getByName(host);
+    try {
+      Socket socket = new Socket(theAddress,port);
+      flag = true;
+    } catch (IOException e) {
+
+    }
+    return flag;
+  }
+
   public static void main(String[] args) {
     commandLine = parseCmd(args);
     if (commandLine.hasOption(HELP_ARGS)) {
@@ -109,7 +135,11 @@ public class Client {
       println("Already connected!");
       return;
     }
-    ConnectReq the_request = new ConnectReq(Global.USERNAME, Global.PASSWORD);
+    print("Username: ");
+    String username = SCANNER.nextLine();
+    print("Password: ");
+    String password = SCANNER.nextLine();
+    ConnectReq the_request = new ConnectReq(username, password);
     try {
       ConnectResp the_respond = client.connect(the_request);
       println(the_respond.toString());
