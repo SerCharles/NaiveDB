@@ -14,10 +14,13 @@ import java.util.StringJoiner;
  */
 public class MyVisitor extends SQLBaseVisitor {
     private Manager manager;
-
-    public MyVisitor(Manager manager) {
+    private long session;
+    public MyVisitor(Manager manager, long session) {
         super();
         this.manager = manager;
+        this.session = session;
+        //System.out.println("session: "+this.session);
+
     }
     
     private Database GetCurrentDB() {
@@ -46,6 +49,10 @@ public class MyVisitor extends SQLBaseVisitor {
             return visitCreate_db_stmt(ctx.create_db_stmt());
         if (ctx.drop_db_stmt() != null)
             return visitDrop_db_stmt(ctx.drop_db_stmt());
+        if (ctx.begin_transaction_stmt() != null)
+            return visitBegin_transaction_stmt(ctx.begin_transaction_stmt());
+        if (ctx.commit_stmt() != null)
+            return visitCommit_stmt(ctx.commit_stmt());
         if(ctx.show_meta_stmt() != null)
             return visitShow_meta_stmt(ctx.show_meta_stmt());
         if (ctx.delete_stmt() != null)
@@ -66,7 +73,42 @@ public class MyVisitor extends SQLBaseVisitor {
             return visitQuit_stmt();
         return null;
     }
-    
+
+    /*
+    开始transaction
+    */
+    public String visitBegin_transaction_stmt(SQLParser.Begin_transaction_stmtContext ctx) {
+        try{
+            if (!manager.transaction_sessions.contains(session)){
+                manager.transaction_sessions.add(session);
+            }else{
+                System.out.println("session already in a transaction.");
+            }
+            //System.out.println("sessions: "+manager.transaction_sessions);
+
+        }catch (Exception e){
+            return e.getMessage();
+        }
+        return "start transaction";
+    }
+
+    /*
+    commit
+     */
+    public String visitCommit_stmt(SQLParser.Commit_stmtContext ctx) {
+        try{
+            if (manager.transaction_sessions.contains(session)){
+                manager.transaction_sessions.remove(session);
+            }else{
+                System.out.println("session not in a transaction.");
+            }
+            //System.out.println("sessions: "+manager.transaction_sessions);
+        }catch (Exception e){
+            return e.getMessage();
+        }
+        return "commit transaction";
+    }
+
     /**
      * 描述：处理退出
      */
@@ -186,7 +228,7 @@ public class MyVisitor extends SQLBaseVisitor {
         }
         return "Dropped table " + name + ".";
     }
-    
+
     /**
      * 描述：处理数据库单一表显示
      */
@@ -540,4 +582,5 @@ public class MyVisitor extends SQLBaseVisitor {
         return new Logic(visitMultiple_condition(ctx.multiple_condition(0)),
                 visitMultiple_condition(ctx.multiple_condition(1)), logic_type);
     }
+
 }

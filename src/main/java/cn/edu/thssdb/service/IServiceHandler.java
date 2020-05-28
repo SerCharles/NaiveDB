@@ -87,9 +87,9 @@ public class IServiceHandler implements IService.Iface {
     }
     
     
-    System.out.println(req.statement);
-    String result = handler.evaluate(req.statement);
-    System.out.println(result);
+    System.out.println("query: "+req.statement);
+    String result = handler.evaluate(req.statement, the_session);
+    System.out.println("result: "+result);
     
     ArrayList<String> the_result = new ArrayList<>();
     the_result.add(result);

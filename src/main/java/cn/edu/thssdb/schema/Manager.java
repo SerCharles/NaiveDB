@@ -15,6 +15,7 @@ import static cn.edu.thssdb.utils.Global.DATA_DIRECTORY;
 public class Manager {
     private HashMap<String, Database> databases;
     private Database currentDB;
+    public ArrayList<Long> transaction_sessions;
     private static ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
     public static Manager getInstance() {
@@ -24,6 +25,7 @@ public class Manager {
     public Manager() {
         databases = new HashMap<>();
         currentDB = null;
+        transaction_sessions = new ArrayList<Long>();
         recover();
     }
 

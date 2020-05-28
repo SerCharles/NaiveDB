@@ -5,7 +5,6 @@ import cn.edu.thssdb.schema.Manager;
 import cn.edu.thssdb.service.IServiceHandler;
 import cn.edu.thssdb.utils.Global;
 import org.apache.thrift.server.TServer;
-import org.apache.thrift.server.TSimpleServer;
 import org.apache.thrift.server.TThreadPoolServer;
 import org.apache.thrift.transport.TServerSocket;
 import org.apache.thrift.transport.TTransportException;
