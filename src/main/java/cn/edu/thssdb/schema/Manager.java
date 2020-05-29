@@ -16,6 +16,10 @@ public class Manager {
     private HashMap<String, Database> databases;
     private Database currentDB;
     public ArrayList<Long> transaction_sessions;
+    public ArrayList<Long> session_queue;
+    public HashMap<Long, ArrayList<String>> s_lock_dict;
+    public HashMap<Long, ArrayList<String>> x_lock_dict;
+
     private static ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
     public static Manager getInstance() {
@@ -24,8 +28,11 @@ public class Manager {
 
     public Manager() {
         databases = new HashMap<>();
+        s_lock_dict = new HashMap<>();
+        x_lock_dict = new HashMap<>();
         currentDB = null;
-        transaction_sessions = new ArrayList<Long>();
+        transaction_sessions = new ArrayList<>();
+        session_queue = new ArrayList<>();
         recover();
     }
 

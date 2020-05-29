@@ -81,6 +81,10 @@ public class MyVisitor extends SQLBaseVisitor {
         try{
             if (!manager.transaction_sessions.contains(session)){
                 manager.transaction_sessions.add(session);
+                ArrayList<String> s_lock_tables = new ArrayList<>();
+                ArrayList<String> x_lock_tables = new ArrayList<>();
+                manager.s_lock_dict.put(session,s_lock_tables);
+                manager.x_lock_dict.put(session,x_lock_tables);
             }else{
                 System.out.println("session already in a transaction.");
             }
@@ -98,7 +102,15 @@ public class MyVisitor extends SQLBaseVisitor {
     public String visitCommit_stmt(SQLParser.Commit_stmtContext ctx) {
         try{
             if (manager.transaction_sessions.contains(session)){
+                Database the_database = GetCurrentDB();
                 manager.transaction_sessions.remove(session);
+                ArrayList<String> table_list = manager.x_lock_dict.get(session);
+                for (String table_name : table_list) {
+                    Table the_table = the_database.get(table_name);
+                    the_table.free_x_lock(session);
+                }
+                table_list.clear();
+                manager.x_lock_dict.put(session,table_list);
             }else{
                 System.out.println("session not in a transaction.");
             }
@@ -260,12 +272,81 @@ public class MyVisitor extends SQLBaseVisitor {
         
         //value处理
         Database the_database = GetCurrentDB();
-        for (SQLParser.Value_entryContext subCtx : ctx.value_entry()) {
-            String[] values = visitValue_entry(subCtx);
-            try {
-                the_database.insert(table_name, column_names, values);
-            } catch (Exception e) {
-                return e.toString();
+
+        if(manager.transaction_sessions.contains(session))
+        {
+            //manager.session_queue.add(session);
+            Table the_table = the_database.get(table_name);
+            while(true)
+            {
+                if(!manager.session_queue.contains(session))   //新加入一个session
+                {
+                    int get_lock = the_table.get_x_lock(session);
+                    if(get_lock!=-1)
+                    {
+                        if(get_lock==1)
+                        {
+                            ArrayList<String> tmp = manager.x_lock_dict.get(session);
+                            tmp.add(table_name);
+                            manager.x_lock_dict.put(session,tmp);
+                        }
+                        break;
+                    }else
+                    {
+                        manager.session_queue.add(session);
+                    }
+                }else    //之前等待的session
+                {
+                    if(manager.session_queue.get(0)==session)  //只查看阻塞队列开头session
+                    {
+                        int get_lock = the_table.get_x_lock(session);
+                        if(get_lock!=-1)
+                        {
+                            if(get_lock==1)
+                            {
+                                ArrayList<String> tmp = manager.x_lock_dict.get(session);
+                                tmp.add(table_name);
+                                manager.x_lock_dict.put(session,tmp);
+                            }
+                            manager.session_queue.remove(0);
+                            break;
+                        }
+                    }
+                }
+                try
+                {
+                    System.out.print("session: "+session+": ");
+                    System.out.println(manager.session_queue);
+                    Thread.sleep(500);   // 休眠3秒
+                } catch (Exception e) {
+                    System.out.println("Got an exception!");
+                }
+            }
+            for (SQLParser.Value_entryContext subCtx : ctx.value_entry())
+            {
+                String[] values = visitValue_entry(subCtx);
+                try {
+                    if(column_names == null)
+                    {
+                        the_table.insert(values);
+                    }
+                    else
+                    {
+                        the_table.insert(column_names, values);
+                    }
+                } catch (Exception e) {
+                    return e.toString();
+                }
+            }
+        }else{
+            for (SQLParser.Value_entryContext subCtx : ctx.value_entry())
+            {
+                String[] values = visitValue_entry(subCtx);
+                try {
+                    the_database.insert(table_name, column_names, values);
+                } catch (Exception e) {
+                    return e.toString();
+                }
             }
         }
         return "Inserted " + ctx.value_entry().size() + " rows.";
@@ -285,10 +366,70 @@ public class MyVisitor extends SQLBaseVisitor {
             }
         }
         Logic logic = visitMultiple_condition(ctx.multiple_condition());
-        try {
-            return the_database.delete(table_name, logic);
-        } catch (Exception e) {
-            return e.toString();
+
+        if(manager.transaction_sessions.contains(session))
+        {
+            //manager.session_queue.add(session);
+            Table the_table = the_database.get(table_name);
+            while(true)
+            {
+                if(!manager.session_queue.contains(session))   //新加入一个session
+                {
+                    int get_lock = the_table.get_x_lock(session);
+                    if(get_lock!=-1)
+                    {
+                        if(get_lock==1)
+                        {
+                            ArrayList<String> tmp = manager.x_lock_dict.get(session);
+                            tmp.add(table_name);
+                            manager.x_lock_dict.put(session,tmp);
+                        }
+                        break;
+                    }else
+                    {
+                        manager.session_queue.add(session);
+                    }
+                }else    //之前等待的session
+                {
+                    if(manager.session_queue.get(0)==session)  //只查看阻塞队列开头session
+                    {
+                        int get_lock = the_table.get_x_lock(session);
+                        if(get_lock!=-1)
+                        {
+                            if(get_lock==1)
+                            {
+                                ArrayList<String> tmp = manager.x_lock_dict.get(session);
+                                tmp.add(table_name);
+                                manager.x_lock_dict.put(session,tmp);
+                            }
+                            manager.session_queue.remove(0);
+                            break;
+                        }
+                    }
+                }
+                try
+                {
+                    System.out.print("session: "+session+": ");
+                    System.out.println(manager.session_queue);
+                    Thread.sleep(500);   // 休眠3秒
+                } catch (Exception e) {
+                    System.out.println("Got an exception!");
+                }
+            }
+
+            try {
+                return the_table.delete(logic);
+            } catch (Exception e) {
+                return e.toString();
+            }
+
+        }
+        else{
+            try {
+                return the_database.delete(table_name, logic);
+            } catch (Exception e) {
+                return e.toString();
+            }
         }
     }
     
@@ -308,10 +449,69 @@ public class MyVisitor extends SQLBaseVisitor {
             }
         }
         Logic logic = visitMultiple_condition(ctx.multiple_condition());
-        try {
-            return the_database.update(table_name, column_name, value, logic);
-        } catch (Exception e) {
-            return e.toString();
+
+        if(manager.transaction_sessions.contains(session))
+        {
+            Table the_table = the_database.get(table_name);
+            while(true)
+            {
+                if(!manager.session_queue.contains(session))   //新加入一个session
+                {
+                    int get_lock = the_table.get_x_lock(session);
+                    if(get_lock!=-1)
+                    {
+                        if(get_lock==1)
+                        {
+                            ArrayList<String> tmp = manager.x_lock_dict.get(session);
+                            tmp.add(table_name);
+                            manager.x_lock_dict.put(session,tmp);
+                        }
+                        break;
+                    }else
+                    {
+                        manager.session_queue.add(session);
+                    }
+                }else    //之前等待的session
+                {
+                    if(manager.session_queue.get(0)==session)  //只查看阻塞队列开头session
+                    {
+                        int get_lock = the_table.get_x_lock(session);
+                        if(get_lock!=-1)
+                        {
+                            if(get_lock==1)
+                            {
+                                ArrayList<String> tmp = manager.x_lock_dict.get(session);
+                                tmp.add(table_name);
+                                manager.x_lock_dict.put(session,tmp);
+                            }
+                            manager.session_queue.remove(0);
+                            break;
+                        }
+                    }
+                }
+                try
+                {
+                    System.out.print("session: "+session+": ");
+                    System.out.println(manager.session_queue);
+                    Thread.sleep(500);   // 休眠3秒
+                } catch (Exception e) {
+                    System.out.println("Got an exception!");
+                }
+            }
+
+            try {
+                return the_table.update(column_name, value, logic);
+            } catch (Exception e) {
+                return e.toString();
+            }
+        }
+
+        else{
+            try {
+                return the_database.update(table_name, column_name, value, logic);
+            } catch (Exception e) {
+                return e.toString();
+            }
         }
     }
     

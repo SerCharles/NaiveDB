@@ -25,6 +25,9 @@ public class Table implements Iterable<Row> {
     public String tableName;
     public ArrayList<Column> columns;
     public Cache cache;
+    int tplock = 0;
+    public ArrayList<Long> s_lock_list;
+    public ArrayList<Long> x_lock_list;
     //public BPlusTree<Entry, Row> index;
     private int primaryIndex = -1;
 
@@ -44,7 +47,70 @@ public class Table implements Iterable<Row> {
 //        System.out.println(primaryIndex);
         this.cache = new Cache(databaseName, tableName);
         this.lock = new ReentrantReadWriteLock();
+        this.s_lock_list = new ArrayList<>();
+        this.x_lock_list = new ArrayList<>();
+        this.tplock = 0;
         recover();
+    }
+
+    public int get_s_lock(long session){
+        int value = 0;                       //返回-1代表加锁失败  返回0代表成功但未加锁  返回1代表成功加锁
+        if(tplock==2){
+            if(x_lock_list.contains(session)){   //自身已经有更高级的锁了 用x锁去读，未加锁
+                value = 0;
+            }else{
+                value = -1;                      //别的session占用x锁，未加锁
+            }
+        }else if(tplock==1){
+            if(s_lock_list.contains(session)){    //自身已经有s锁了 用s锁去读，未加锁
+                value = 0;
+            }else{
+                s_lock_list.add(session);         //其他session加了s锁 把自己加上
+                tplock = 1;
+                value = 1;
+            }
+        }else if(tplock==0){
+            s_lock_list.add(session);              //未加锁 把自己加上
+            tplock = 1;
+            value = 1;
+        }
+        return value;
+    }
+
+    public int get_x_lock(long session){
+        int value = 0;                    //返回-1代表加锁失败  返回0代表成功但未加锁  返回1代表成功加锁
+        if(tplock==2){
+            if(x_lock_list.contains(session)){     //自身已经取得x锁
+                value = 0;
+            }else{
+                value = -1;                      //获取x锁失败
+            }
+        }else if(tplock==1){
+                value = -1;                          //正在被其他s锁占用
+        }else if(tplock==0){
+            x_lock_list.add(session);
+            tplock = 2;
+            value = 1;
+        }
+        return value;
+    }
+
+    public int free_s_lock(long session){
+        int value = 0;
+        s_lock_list.remove(session);
+        if(s_lock_list.size()==0){
+            tplock = 0;
+        }else{
+            tplock = 1;
+        }
+        return value;
+    }
+
+    public int free_x_lock(long session){
+        int value = 0;
+        tplock = 0;
+        x_lock_list.remove(session);
+        return value;
     }
 
     private void recover() {

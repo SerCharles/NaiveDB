@@ -230,6 +230,7 @@ public class Database {
             the_table.insert(column_names, values);
         }
     }
+
     
     /**
      * 描述：处理删除元素
@@ -240,7 +241,8 @@ public class Database {
         Table the_table = get(table_name);
         return the_table.delete(the_logic);
     }
-    
+
+
     /**
      * 描述：处理更新元素
      * 参数：table name，待更新的单一列名，待更新的值，符合条件
@@ -250,6 +252,7 @@ public class Database {
         Table the_table = get(table_name);
         return the_table.update(column_name, value, the_logic);
     }
+
     
     /**
     * 描述：建立单一querytable
