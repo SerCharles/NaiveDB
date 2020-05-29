@@ -542,23 +542,103 @@ public class MyVisitor extends SQLBaseVisitor {
             throw new NoSelectedTableException();
         }
         QueryTable the_query_table = null;
+        ArrayList<String> table_names = new ArrayList<>();
+
         try {
+            //System.out.println("table names: " + ctx.table_query());
             the_query_table = visitTable_query(ctx.table_query(0));
+            for (SQLParser.Table_nameContext subCtx : ctx.table_query(0).table_name()) {
+                //System.out.println("table name: " + subCtx.getText().toLowerCase());
+                table_names.add(subCtx.getText().toLowerCase());
+            }
+
         } catch (Exception e) {
             return e.toString();
         }
         if(the_query_table == null) {
             throw new NoSelectedTableException();
         }
-        
         //建立逻辑，获得结果
         Logic logic = null;
         if (ctx.K_WHERE() != null)
             logic = visitMultiple_condition(ctx.multiple_condition());
-        try {
-            return the_database.select(columns_selected, the_query_table, logic, distinct);
-        } catch (Exception e) {
-            return e.toString();
+
+
+        if(manager.transaction_sessions.contains(session))
+        {
+            //manager.session_queue.add(session);
+            while(true)
+            {
+                if(!manager.session_queue.contains(session))   //新加入一个session
+                {
+                    ArrayList<Integer> lock_result = new ArrayList<>();
+                    for (String name : table_names) {
+                        Table the_table = the_database.get(name);
+                        int get_lock = the_table.get_s_lock(session);
+                        lock_result.add(get_lock);
+                    }
+                    if(lock_result.contains(-1))
+                    {
+                        for (String table_name : table_names) {
+                            Table the_table = the_database.get(table_name);
+                            the_table.free_s_lock(session);
+                        }
+                        manager.session_queue.add(session);
+
+                    }else
+                    {
+                        break;
+                    }
+                }else    //之前等待的session
+                {
+                    if(manager.session_queue.get(0)==session)  //只查看阻塞队列开头session
+                    {
+                        ArrayList<Integer> lock_result = new ArrayList<>();
+                        for (String name : table_names) {
+                            Table the_table = the_database.get(name);
+                            int get_lock = the_table.get_s_lock(session);
+                            lock_result.add(get_lock);
+                        }
+                        if(!lock_result.contains(-1))
+                        {
+                            manager.session_queue.remove(0);
+                            break;
+                        }else
+                        {
+                            for (String table_name : table_names) {
+                                Table the_table = the_database.get(table_name);
+                                the_table.free_s_lock(session);
+                            }
+                        }
+                    }
+                }
+                try
+                {
+                    System.out.print("session: "+session+": ");
+                    System.out.println(manager.session_queue);
+                    Thread.sleep(500);   // 休眠3秒
+                } catch (Exception e) {
+                    System.out.println("Got an exception!");
+                }
+            }
+            try {
+                String result = the_database.select(columns_selected, the_query_table, logic, distinct);
+                for (String table_name : table_names) {
+                    Table the_table = the_database.get(table_name);
+                    the_table.free_s_lock(session);
+                }
+                return result;
+            } catch (Exception e) {
+                return e.toString();
+            }
+
+        }else
+        {
+            try {
+                return the_database.select(columns_selected, the_query_table, logic, distinct);
+            } catch (Exception e) {
+                return e.toString();
+            }
         }
     }
     

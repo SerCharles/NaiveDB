@@ -95,22 +95,24 @@ public class Table implements Iterable<Row> {
         return value;
     }
 
-    public int free_s_lock(long session){
-        int value = 0;
-        s_lock_list.remove(session);
-        if(s_lock_list.size()==0){
-            tplock = 0;
-        }else{
-            tplock = 1;
+    public void free_s_lock(long session){
+        if(s_lock_list.contains(session))
+        {
+            s_lock_list.remove(session);
+            if(s_lock_list.size()==0){
+                tplock = 0;
+            }else{
+                tplock = 1;
+            }
         }
-        return value;
     }
 
-    public int free_x_lock(long session){
-        int value = 0;
-        tplock = 0;
-        x_lock_list.remove(session);
-        return value;
+    public void free_x_lock(long session){
+        if(x_lock_list.contains(session))
+        {
+            tplock = 0;
+            x_lock_list.remove(session);
+        }
     }
 
     private void recover() {
