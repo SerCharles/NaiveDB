@@ -80,7 +80,7 @@ public class MyVisitor extends SQLBaseVisitor {
     public String visitBegin_transaction_stmt(SQLParser.Begin_transaction_stmtContext ctx) {
         try{
             if (!manager.transaction_sessions.contains(session)){
-                manager.persistAll();
+                //manager.persistAll();
                 manager.transaction_sessions.add(session);
                 ArrayList<String> s_lock_tables = new ArrayList<>();
                 ArrayList<String> x_lock_tables = new ArrayList<>();
@@ -113,7 +113,7 @@ public class MyVisitor extends SQLBaseVisitor {
                 }
                 table_list.clear();
                 manager.x_lock_dict.put(session,table_list);
-                manager.persistAll();
+                //manager.persistAll();
             }else{
                 System.out.println("session not in a transaction.");
             }
@@ -318,8 +318,8 @@ public class MyVisitor extends SQLBaseVisitor {
                 }
                 try
                 {
-                    System.out.print("session: "+session+": ");
-                    System.out.println(manager.session_queue);
+                    //System.out.print("session: "+session+": ");
+                    //System.out.println(manager.session_queue);
                     Thread.sleep(500);   // 休眠3秒
                 } catch (Exception e) {
                     System.out.println("Got an exception!");
@@ -412,8 +412,8 @@ public class MyVisitor extends SQLBaseVisitor {
                 }
                 try
                 {
-                    System.out.print("session: "+session+": ");
-                    System.out.println(manager.session_queue);
+                    //System.out.print("session: "+session+": ");
+                    //System.out.println(manager.session_queue);
                     Thread.sleep(500);   // 休眠3秒
                 } catch (Exception e) {
                     System.out.println("Got an exception!");
@@ -494,8 +494,8 @@ public class MyVisitor extends SQLBaseVisitor {
                 }
                 try
                 {
-                    System.out.print("session: "+session+": ");
-                    System.out.println(manager.session_queue);
+                    //System.out.print("session: "+session+": ");
+                    //System.out.println(manager.session_queue);
                     Thread.sleep(500);   // 休眠3秒
                 } catch (Exception e) {
                     System.out.println("Got an exception!");
@@ -617,8 +617,8 @@ public class MyVisitor extends SQLBaseVisitor {
                 }
                 try
                 {
-                    System.out.print("session: "+session+": ");
-                    System.out.println(manager.session_queue);
+                    //System.out.print("session: "+session+": ");
+                    //System.out.println(manager.session_queue);
                     Thread.sleep(500);   // 休眠3秒
                 } catch (Exception e) {
                     System.out.println("Got an exception!");

@@ -85,9 +85,19 @@ public class IServiceHandler implements IService.Iface {
       the_response.setStatus(the_status);
       return the_response;
     }
-    
-    
-    String result = handler.evaluate(req.statement, the_session);
+
+    String cmd = req.statement.split("\\s+")[0];
+    String result;
+    if((cmd.equals("insert") || cmd.equals("update") || cmd.equals("delete") || cmd.equals("select")) && !manager.transaction_sessions.contains(the_session))
+    {
+      handler.evaluate("begin transaction", the_session);
+      result = handler.evaluate(req.statement, the_session);
+      handler.evaluate("commit", the_session);
+
+    }else
+    {
+      result = handler.evaluate(req.statement, the_session);
+    }
 
     ArrayList<String> the_result = new ArrayList<>();
     the_result.add(result);

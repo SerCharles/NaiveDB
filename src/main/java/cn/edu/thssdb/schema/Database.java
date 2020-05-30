@@ -10,7 +10,6 @@ import cn.edu.thssdb.query.QueryResult;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import static cn.edu.thssdb.utils.Global.DATA_DIRECTORY;

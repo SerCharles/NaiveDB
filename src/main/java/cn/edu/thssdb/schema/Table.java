@@ -2,7 +2,7 @@ package cn.edu.thssdb.schema;
 
 import cn.edu.thssdb.cache.Cache;
 import cn.edu.thssdb.exception.*;
-import cn.edu.thssdb.index.BPlusTree;
+//import cn.edu.thssdb.index.BPlusTree;
 import static cn.edu.thssdb.utils.Global.*;
 
 import cn.edu.thssdb.query.Comparer;
@@ -28,7 +28,6 @@ public class Table implements Iterable<Row> {
     int tplock = 0;
     public ArrayList<Long> s_lock_list;
     public ArrayList<Long> x_lock_list;
-    //public BPlusTree<Entry, Row> index;
     private int primaryIndex = -1;
 
     public Table(String databaseName, String tableName, Column[] columns) {

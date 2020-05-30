@@ -45,6 +45,7 @@ public class Client {
   private static TProtocol protocol;
   private static IService.Client client;
   private static CommandLine commandLine;
+  private static String Tmod = "";
   
 //解决多客户端问题
   private static long session = -1;
@@ -86,7 +87,7 @@ public class Client {
       client = new IService.Client(protocol);
       boolean open = true;
       while (true) {
-        print(Global.CLI_PREFIX);
+        print("\nThssDB"+Tmod+">");
         String msg = SCANNER.nextLine();
         long startTime = System.currentTimeMillis();
         switch (msg.trim()) {
@@ -192,6 +193,13 @@ public class Client {
       else {
         println("Success!");
         println(the_response.rowList.get(0).get(0));
+        if(the_response.rowList.get(0).get(0).equals("start transaction"))
+        {
+          Tmod = "(T)";
+        }else if(the_response.rowList.get(0).get(0).equals("commit transaction"))
+        {
+          Tmod = "";
+        }
       }
     } catch (TException e) {
       logger.error(e.getMessage());

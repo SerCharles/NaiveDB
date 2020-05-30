@@ -15,6 +15,7 @@ public class SQLHandler{
 	}
 	
 	public String evaluate(String statement, long session) {
+		System.out.println("session:" +session + "  " + statement);
 		//词法分析
 		SQLLexer lexer = new SQLLexer(CharStreams.fromString(statement));
 		lexer.removeErrorListeners();
