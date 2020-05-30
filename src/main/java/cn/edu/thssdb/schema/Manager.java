@@ -99,7 +99,7 @@ public class Manager {
         }
     }
 
-    private void persist()
+    public void persist()
     {
         try {
             FileOutputStream fos = new FileOutputStream(DATA_DIRECTORY + "manager.data");
