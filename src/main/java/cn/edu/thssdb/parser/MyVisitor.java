@@ -216,6 +216,7 @@ public class MyVisitor extends SQLBaseVisitor {
         String databaseName = ctx.database_name().getText();
         try {
             manager.createDatabaseIfNotExists(databaseName.toLowerCase());
+            manager.persist();  //将表名储存
         } catch (Exception e) {
             return e.getMessage();
         }
@@ -293,7 +294,6 @@ public class MyVisitor extends SQLBaseVisitor {
         }
         
         //在当前数据库建表
-        Database current_base = GetCurrentDB();
         try {
             manager.getCurrent().create(name.toLowerCase(), columns);
         } catch (Exception e) {

@@ -129,6 +129,7 @@ public class Manager {
         try
         {
             FileWriter writer=new FileWriter(filename,true);
+            System.out.println(statement);
             writer.write(statement + "\n");
             writer.close();
         } catch (IOException e)
@@ -172,7 +173,6 @@ public class Manager {
                 }
                 for (int i = 0; i <= last_cmd; i++) {
                     evaluate(lines.get(i));
-                    writelog(lines.get(i));
                 }
                 System.out.println("read " + (last_cmd + 1) + " lines");
                 reader.close();

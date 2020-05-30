@@ -85,17 +85,18 @@ public class IServiceHandler implements IService.Iface {
       return the_response;
     }
 
-    String cmd = req.statement.split("\\s+")[0];
+    String command = req.statement.toLowerCase();
+    String cmd = command.split("\\s+")[0];
     String result;
     if((cmd.equals("insert") || cmd.equals("update") || cmd.equals("delete") || cmd.equals("select")) && !manager.transaction_sessions.contains(the_session))
     {
       handler.evaluate("autobegin transaction", the_session);
-      result = handler.evaluate(req.statement, the_session);
+      result = handler.evaluate(command, the_session);
       handler.evaluate("autocommit", the_session);
 
     }else
     {
-      result = handler.evaluate(req.statement, the_session);
+      result = handler.evaluate(command, the_session);
     }
 
     ArrayList<String> the_result = new ArrayList<>();
