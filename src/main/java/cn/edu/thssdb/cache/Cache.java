@@ -16,7 +16,7 @@ import java.util.Iterator;
 import static cn.edu.thssdb.utils.Global.DATA_DIRECTORY;
 
 public class Cache {
-    private static final int maxPageNum = 100;
+    private static final int maxPageNum = 1000;
     private HashMap<Integer, Page> pages;
     private int pageNum;
     private BPlusTree<Entry, Row> index;
@@ -33,6 +33,7 @@ public class Cache {
     public int getPageNum() { return pageNum; }
 
     public Iterator<Pair<Entry, Row>> getIndexIter() { return index.iterator(); }
+
 
     public boolean insertPage(ArrayList<Row> rows, int primaryKey)
     {
@@ -53,6 +54,12 @@ public class Cache {
         return noOverflow;
     }
 
+
+    /**
+     * 描述：向缓存插入一条信息
+     * 参数：主键编号和行信息
+     * 返回：
+     */
     public void insertRow(ArrayList<Entry> entries, int primaryKey)
     {
         Row row = new Row(entries.toArray(new Entry[0]));
@@ -73,6 +80,37 @@ public class Cache {
             throw new DuplicateKeyException(primaryEntry.toString());
         }
         curPage.insertEntry(primaryEntry, len);
+        curPage.setEdited(true);
+        curPage.setTimeStamp();
+    }
+
+    /**
+     * 描述：向缓存插入一条信息
+     * 参数：主键编号和行信息 重载后加入是否处于事务中的选项
+     * 返回：
+     */
+    public void insertRow(ArrayList<Entry> entries, int primaryKey, boolean isTransaction)
+    {
+        Row row = new Row(entries.toArray(new Entry[0]));
+        int len = row.toString().length();
+        Entry primaryEntry = entries.get(primaryKey);
+        Page curPage = pages.get(pageNum);
+        if (curPage == null || curPage.getSize() + len > Page.maxSize)
+        {
+            addPage();
+            curPage = pages.get(pageNum);
+        }
+        row.setPosition(pageNum);
+        try {
+            index.put(primaryEntry, row);
+        }
+        catch (DuplicateKeyException e) {
+            curPage.setTimeStamp();
+            throw new DuplicateKeyException(primaryEntry.toString());
+        }
+        curPage.insertEntry(primaryEntry, len);
+        if (isTransaction)
+            curPage.setPinned(true);
         curPage.setEdited(true);
         curPage.setTimeStamp();
     }
@@ -98,6 +136,32 @@ public class Cache {
         Page curPage = pages.get(position);
         curPage.removeEntry(entry, row.toString().length());
         curPage.setTimeStamp();
+        curPage.setEdited(true);
+    }
+
+    public void deleteRow(Entry entry, int primaryKey, boolean isTransaction)
+    {
+        Row row;
+        try {
+            row = index.get(entry);
+        }
+        catch (KeyNotExistException e) {
+            throw new KeyNotExistException(entry.toString());
+        }
+
+        int position = row.getPosition();
+        if (row instanceof EmptyRow)
+        {
+            exchangePage(position, primaryKey);
+            row = index.get(entry);
+        }
+
+        index.remove(entry);
+        Page curPage = pages.get(position);
+        curPage.removeEntry(entry, row.toString().length());
+        curPage.setTimeStamp();
+        if (isTransaction)
+            curPage.setPinned(true);
         curPage.setEdited(true);
     }
 
@@ -156,6 +220,67 @@ public class Cache {
             }
         }
         curPage.setTimeStamp();
+        curPage.setEdited(true);
+    }
+
+    public void updateRow(Entry primaryEntry, int primaryKey,
+                          int[] targetKeys, ArrayList<Entry> targetEntries,
+                          boolean isTransaction)
+    {
+        Row row;
+        try {
+            row = index.get(primaryEntry);
+        }
+        catch (KeyNotExistException e) {
+            throw new KeyNotExistException(primaryEntry.toString());
+        }
+
+        int position = row.getPosition();
+        if (row instanceof EmptyRow)
+        {
+            exchangePage(position, primaryKey);
+            row = index.get(primaryEntry);
+        }
+
+        boolean changePrimaryEntry = false;
+        Entry targetPrimaryEntry = null;
+        int originalLen = row.toString().length();
+        for (int i = 0; i < targetKeys.length; i++)
+        {
+            if (targetKeys[i] == primaryKey)
+            {
+                changePrimaryEntry = true;
+                targetPrimaryEntry = targetEntries.get(i);
+                // check if duplicated
+                if (index.contains(targetPrimaryEntry) && !primaryEntry.equals(targetPrimaryEntry))
+                    throw new DuplicateKeyException(targetPrimaryEntry.toString());
+                break;
+            }
+        }
+
+        // update row
+        for (int i = 0; i < targetKeys.length; i++)
+        {
+            int key = targetKeys[i];
+            row.getEntries().set(key, targetEntries.get(i));
+        }
+
+        Page curPage = pages.get(position);
+        if (changePrimaryEntry)
+        {
+            curPage.removeEntry(primaryEntry, originalLen);
+            curPage.insertEntry(targetPrimaryEntry, row.toString().length());
+            index.remove(primaryEntry);
+            try {
+                index.put(targetPrimaryEntry, row);
+            }
+            catch (DuplicateKeyException e) {
+                throw new DuplicateKeyException(targetPrimaryEntry.toString());
+            }
+        }
+        curPage.setTimeStamp();
+        if (isTransaction)
+            curPage.setPinned(true);
         curPage.setEdited(true);
     }
 
@@ -255,7 +380,8 @@ public class Cache {
         {
             Page page = iter.next().getValue();
             long timeStamp = page.getTimeStamp();
-            if (timeStamp <= earliest)
+            boolean isPinned = page.getPinned();
+            if (timeStamp <= earliest && !isPinned)
             {
                 earliest = timeStamp;
                 targetID = page.getId();

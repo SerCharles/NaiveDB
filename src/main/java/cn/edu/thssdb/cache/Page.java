@@ -7,13 +7,14 @@ import java.util.ArrayList;
 
 
 public class Page {
-    public static final int maxSize = 256;
+    public static final int maxSize = 2048;
     private int id;               // unique id
     private int size;             // size of the page
     private ArrayList<Entry> entries;
     private String pageFileName;  // filename on the disk
     private long timeStamp;       // timestamp of last visit
     private Boolean edited;       // this page has been edited, need to be write back to file
+    private Boolean isPinned;     // whether is pinned in a transaction
 
     public Page(String upperName, int id)
     {
@@ -23,6 +24,7 @@ public class Page {
         edited = false;
         entries = new ArrayList<>();
         timeStamp = System.currentTimeMillis();
+        isPinned = false;
     }
 
     public int getId() { return id; }
@@ -34,6 +36,9 @@ public class Page {
 
     public void setEdited(Boolean isEdited) { this.edited = isEdited; }
     public Boolean getEdited() { return this.edited; }
+
+    public void setPinned(Boolean isPinned) { this.isPinned = isPinned; }
+    public Boolean getPinned() { return this.isPinned; }
 
     public int getSize() { return size; }
 

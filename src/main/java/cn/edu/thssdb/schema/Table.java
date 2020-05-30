@@ -156,6 +156,12 @@ public class Table implements Iterable<Row> {
         }
     }
 
+
+    /**
+     * 描述：插入一条记录 非transaction
+     * 参数：ccolumns列表（schema顺序），entries列表（具体插入的行）
+     * 返回：
+     */
     public void insert(ArrayList<Column> columns, ArrayList<Entry> entries) {
         if (columns == null || entries == null)
             throw new SchemaLengthMismatchException(this.columns.size(), 0);
@@ -187,6 +193,51 @@ public class Table implements Iterable<Row> {
         try {
             lock.writeLock().lock();
             cache.insertRow(orderedEntries, primaryIndex);
+        }
+        catch (DuplicateKeyException e) {
+            throw e;
+        }
+        finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    /**
+     * 描述：插入一条记录 加入transaction选项
+     * 参数：ccolumns列表（schema顺序），entries列表（具体插入的行）
+     * 返回：
+     */
+    public void insert(ArrayList<Column> columns, ArrayList<Entry> entries, boolean isTransaction) {
+        if (columns == null || entries == null)
+            throw new SchemaLengthMismatchException(this.columns.size(), 0);
+
+        // match columns and reorder entries
+        int schemaLen = this.columns.size();
+        if (columns.size() != schemaLen || entries.size() != schemaLen)
+            throw new SchemaLengthMismatchException(schemaLen, columns.size());
+        ArrayList<Entry> orderedEntries = new ArrayList<>();
+        for (Column column : this.columns)
+        {
+            boolean isMatched = false;
+            for (int i = 0; i < schemaLen; i++)
+            {
+                if (columns.get(i).compareTo(column) == 0)
+                {
+                    orderedEntries.add(entries.get(i));
+                    isMatched = true;
+                    break;
+                }
+            }
+            if (!isMatched)
+            {
+                throw new SchemaMismatchException(column.toString());
+            }
+        }
+
+        // write to cache
+        try {
+            lock.writeLock().lock();
+            cache.insertRow(orderedEntries, primaryIndex, isTransaction);
         }
         catch (DuplicateKeyException e) {
             throw e;
@@ -426,6 +477,22 @@ public class Table implements Iterable<Row> {
             lock.writeLock().unlock();
         }
     }
+
+    public void delete(Entry primaryEntry, boolean isTransaction) {
+        if (primaryEntry == null)
+            throw new KeyNotExistException(null);
+
+        try {
+            lock.writeLock().lock();
+            cache.deleteRow(primaryEntry, primaryIndex, isTransaction);
+        }
+        catch (KeyNotExistException e) {
+            throw e;
+        }
+        finally {
+            lock.writeLock().unlock();
+        }
+    }
     
     /**
      * 描述：用于sql parser的删除函数
@@ -473,6 +540,42 @@ public class Table implements Iterable<Row> {
         try {
             lock.writeLock().lock();
             cache.updateRow(primaryEntry, primaryIndex, targetKeys, entries);
+        }
+        catch (KeyNotExistException | DuplicateKeyException e) {
+            throw e;
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    public void update(Entry primaryEntry, ArrayList<Column> columns, ArrayList<Entry> entries, boolean isTransaction) {
+//        System.out.println("updatet");
+        if (primaryEntry == null || columns == null || entries == null)
+            throw new KeyNotExistException(null);
+
+        int targetKeys[] = new int[columns.size()];
+        int i = 0;
+        int tableColumnSize = this.columns.size();
+        for (Column column : columns)
+        {
+            boolean isMatched = false;
+            for (int j = 0; j < tableColumnSize; j++)
+            {
+                if (column.equals(this.columns.get(j)))
+                {
+                    targetKeys[i] = j;
+                    isMatched = true;
+                    break;
+                }
+            }
+            if (!isMatched)
+                throw new KeyNotExistException(column.toString());
+            i++;
+        }
+
+        try {
+            lock.writeLock().lock();
+            cache.updateRow(primaryEntry, primaryIndex, targetKeys, entries, isTransaction);
         }
         catch (KeyNotExistException | DuplicateKeyException e) {
             throw e;
