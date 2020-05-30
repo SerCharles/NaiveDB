@@ -53,6 +53,10 @@ public class MyVisitor extends SQLBaseVisitor {
             return visitBegin_transaction_stmt(ctx.begin_transaction_stmt());
         if (ctx.commit_stmt() != null)
             return visitCommit_stmt(ctx.commit_stmt());
+        if (ctx.auto_begin_transaction_stmt() != null)
+            return visitAuto_begin_transaction_stmt(ctx.auto_begin_transaction_stmt());
+        if (ctx.auto_commit_stmt() != null)
+            return visitAuto_commit_stmt(ctx.auto_commit_stmt());
         if(ctx.show_meta_stmt() != null)
             return visitShow_meta_stmt(ctx.show_meta_stmt());
         if (ctx.delete_stmt() != null)
@@ -95,6 +99,28 @@ public class MyVisitor extends SQLBaseVisitor {
         return "start transaction";
     }
 
+
+    /*
+    自动开始transaction
+    */
+    public String visitAuto_begin_transaction_stmt(SQLParser.Auto_begin_transaction_stmtContext ctx) {
+        try{
+            if (!manager.transaction_sessions.contains(session)){
+                manager.transaction_sessions.add(session);
+                ArrayList<String> s_lock_tables = new ArrayList<>();
+                ArrayList<String> x_lock_tables = new ArrayList<>();
+                manager.s_lock_dict.put(session,s_lock_tables);
+                manager.x_lock_dict.put(session,x_lock_tables);
+            }else{
+                System.out.println("session already in a transaction.");
+            }
+
+        }catch (Exception e){
+            return e.getMessage();
+        }
+        return "autostart transaction";
+    }
+
     /*
     commit
      */
@@ -120,6 +146,33 @@ public class MyVisitor extends SQLBaseVisitor {
         }
         return "commit transaction";
     }
+
+    /*
+    autocommit
+     */
+    public String visitAuto_commit_stmt(SQLParser.Auto_commit_stmtContext ctx) {
+        try{
+            if (manager.transaction_sessions.contains(session)){
+                Database the_database = GetCurrentDB();
+                manager.transaction_sessions.remove(session);
+                ArrayList<String> table_list = manager.x_lock_dict.get(session);
+                for (String table_name : table_list) {
+                    Table the_table = the_database.get(table_name);
+                    the_table.free_x_lock(session);
+                    the_table.unpin();
+                }
+                table_list.clear();
+                manager.x_lock_dict.put(session,table_list);
+            }else{
+                System.out.println("session not in a transaction.");
+            }
+            //System.out.println("sessions: "+manager.transaction_sessions);
+        }catch (Exception e){
+            return e.getMessage();
+        }
+        return "autocommit transaction";
+    }
+
 
     /**
      * 描述：处理退出

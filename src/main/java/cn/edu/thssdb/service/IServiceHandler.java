@@ -90,9 +90,9 @@ public class IServiceHandler implements IService.Iface {
     String result;
     if((cmd.equals("insert") || cmd.equals("update") || cmd.equals("delete") || cmd.equals("select")) && !manager.transaction_sessions.contains(the_session))
     {
-      handler.evaluate("begin transaction", the_session);
+      handler.evaluate("autobegin transaction", the_session);
       result = handler.evaluate(req.statement, the_session);
-      handler.evaluate("commit", the_session);
+      handler.evaluate("autocommit", the_session);
 
     }else
     {

@@ -27,6 +27,8 @@ sql_stmt :
     | quit_stmt
     | update_stmt 
     | begin_transaction_stmt
+    | auto_begin_transaction_stmt
+    | auto_commit_stmt
     | commit_stmt;
 
 begin_transaction_stmt :
@@ -34,6 +36,12 @@ begin_transaction_stmt :
 
 commit_stmt :
     K_COMMIT;
+
+auto_begin_transaction_stmt :
+    K_AUTOBEGIN K_TRANSACTION;
+
+auto_commit_stmt :
+    K_AUTOCOMMIT;
 
 create_db_stmt :
     K_CREATE K_DATABASE database_name ;
@@ -236,6 +244,8 @@ K_WHERE : W H E R E;
 K_COMMIT : C O M M I T;
 K_BEGIN : B E G I N;
 K_TRANSACTION : T R A N S A C T I O N;
+K_AUTOBEGIN : A U T O B E G I N;
+K_AUTOCOMMIT : A U T O C O M M I T;
 
 IDENTIFIER :
     [a-zA-Z_] [a-zA-Z_0-9]* ;
