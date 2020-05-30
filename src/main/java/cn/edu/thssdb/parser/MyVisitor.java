@@ -146,7 +146,7 @@ public class MyVisitor extends SQLBaseVisitor {
 
                 String log_name = DATA_DIRECTORY + db_name + ".log";
                 File file = new File(log_name);
-                if(file.exists() && file.isFile() && file.length()>1000)
+                if(file.exists() && file.isFile() && file.length()>50000)
                 {
                     System.out.println("Clear database log");
                     try

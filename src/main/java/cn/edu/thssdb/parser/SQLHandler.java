@@ -20,7 +20,7 @@ public class SQLHandler{
 	public String evaluate(String statement, long session) {
 		System.out.println("session:" +session + "  " + statement);
 		String cmd = statement.split("\\s+")[0];
-		if(Arrays.asList(wal_cmds).contains(cmd))
+		if(Arrays.asList(wal_cmds).contains(cmd) && session==0)
 		{
 			manager.writelog(statement);
 		}

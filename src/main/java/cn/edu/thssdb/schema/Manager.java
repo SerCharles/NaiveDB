@@ -142,26 +142,55 @@ public class Manager {
 
         String log_name = DATA_DIRECTORY + database_name + ".log";
         File file = new File(log_name);
-        if(file.exists() && file.isFile())
-        {
+        if(file.exists() && file.isFile()) {
             System.out.println("log file size: " + file.length() + " Byte");
             System.out.println("Read WAL log to recover database.");
-            evaluate("use "+database_name);
+            evaluate("use " + database_name);
 
-            try
-            {
-                InputStreamReader reader = new InputStreamReader(new FileInputStream(log_name));
+            try {
+                InputStreamReader reader = new InputStreamReader(new FileInputStream(file));
                 BufferedReader bufferedReader = new BufferedReader(reader);
-                String line = null;
-                bufferedReader.read();
-                while ((line = bufferedReader.readLine()) != null)
-                {
-                    evaluate(line);
+                String line;
+                ArrayList<String> lines = new ArrayList<>();
+                ArrayList<Integer> transcation_list = new ArrayList<>();
+                ArrayList<Integer> commit_list = new ArrayList<>();
+                int index = 0;
+                while ((line = bufferedReader.readLine()) != null) {
+                    if (line.equals("begin transaction")) {
+                        transcation_list.add(index);
+                    } else if (line.equals("commit")) {
+                        commit_list.add(index);
+                    }
+                    lines.add(line);
+                    index++;
                 }
+                int last_cmd = 0;
+                if (transcation_list.size() == commit_list.size()) {
+                    last_cmd = lines.size() - 1;
+                } else {
+                    last_cmd = transcation_list.get(transcation_list.size() - 1) - 1;
+                }
+                for (int i = 0; i <= last_cmd; i++) {
+                    evaluate(lines.get(i));
+                    writelog(lines.get(i));
+                }
+                System.out.println("read " + (last_cmd + 1) + " lines");
                 reader.close();
                 bufferedReader.close();
-            } catch (IOException e)
-            {
+
+                //清空log并重写实际执行部分
+                if (transcation_list.size() != commit_list.size()) {
+                    FileWriter writer1 = new FileWriter(log_name);
+                    writer1.write("");
+                    writer1.close();
+                    FileWriter writer2 = new FileWriter(log_name, true);
+                    for (int i = 0; i <= last_cmd; i++) {
+                        writer2.write(lines.get(i) + "\n");
+                    }
+                    writer2.close();
+                }
+
+            } catch (IOException e) {
                 e.printStackTrace();
             }
         }
