@@ -2,12 +2,16 @@ package cn.edu.thssdb.schema;
 
 import cn.edu.thssdb.exception.DatabaseNotExistException;
 import cn.edu.thssdb.exception.FileIOException;
-import cn.edu.thssdb.server.ThssDB;
+import cn.edu.thssdb.schema.MyErrorListener;
+import cn.edu.thssdb.parser.MyVisitor;
+import cn.edu.thssdb.parser.SQLLexer;
+import cn.edu.thssdb.parser.SQLParser;
+import org.antlr.v4.runtime.CharStreams;
+import org.antlr.v4.runtime.CommonTokenStream;
 
 import java.io.*;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import static cn.edu.thssdb.utils.Global.DATA_DIRECTORY;
@@ -90,6 +94,7 @@ public class Manager {
             while ((line = bufferedReader.readLine()) != null)
             {
                 createDatabaseIfNotExists(line);
+                readlog(line);
             }
             reader.close();
             bufferedReader.close();
@@ -113,6 +118,44 @@ public class Manager {
         }
         catch (Exception e) {
             throw new FileIOException(DATA_DIRECTORY + "manager.data");
+        }
+    }
+
+    public void writelog(String statement)
+    {
+        Database current_base = getCurrent();
+        String database_name = current_base.get_name();
+        String filename = DATA_DIRECTORY + database_name + ".log";
+        try
+        {
+            FileWriter writer=new FileWriter(filename,true);
+            writer.write(statement + "\n");
+            writer.close();
+        } catch (IOException e)
+        {
+             e.printStackTrace();
+        }
+    }
+
+    public void readlog(String database_name)
+    {
+        System.out.println("Read WAL log to recover database.");
+        String log_name = DATA_DIRECTORY + database_name + ".log";
+        evaluate("use "+database_name);
+        try
+        {
+            InputStreamReader reader = new InputStreamReader(new FileInputStream(log_name));
+            BufferedReader bufferedReader = new BufferedReader(reader);
+            String line = null;
+            while ((line = bufferedReader.readLine()) != null)
+            {
+                evaluate(line);
+            }
+            reader.close();
+            bufferedReader.close();
+        } catch (IOException e)
+        {
+            e.printStackTrace();
         }
     }
 
@@ -168,6 +211,28 @@ public class Manager {
 
         private ManagerHolder() {
 
+        }
+    }
+
+
+    public String evaluate(String statement) {
+        //词法分析
+        SQLLexer lexer = new SQLLexer(CharStreams.fromString(statement));
+        lexer.removeErrorListeners();
+        lexer.addErrorListener(MyErrorListener.instance);
+        CommonTokenStream tokens = new CommonTokenStream(lexer);
+
+        //句法分析
+        SQLParser parser = new SQLParser(tokens);
+        parser.removeErrorListeners();
+        parser.addErrorListener(MyErrorListener.instance);
+
+        //语义分析
+        try {
+            MyVisitor visitor = new MyVisitor(this, -999);   //测试默认session-999
+            return String.valueOf(visitor.visitParse(parser.parse()));
+        } catch (Exception e) {
+            return "Exception: illegal SQL statement! Error message: " + e.getMessage();
         }
     }
 }

@@ -1,4 +1,4 @@
-package cn.edu.thssdb.parser;
+package cn.edu.thssdb.schema;
 
 import org.antlr.v4.runtime.BaseErrorListener;
 import org.antlr.v4.runtime.RecognitionException;

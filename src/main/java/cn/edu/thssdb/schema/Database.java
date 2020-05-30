@@ -181,7 +181,12 @@ public class Database {
             lock.writeLock().unlock();
         }
     }
-    
+
+    public String get_name()
+    {
+        return name;
+    }
+
     /**
      * 描述：显示数据库单一表信息
      * 参数：无

@@ -4,18 +4,26 @@ import cn.edu.thssdb.schema.Manager;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+
 /**
  * 描述:处理sql的主类，需要传入manager
  */
 public class SQLHandler{
 	private Manager manager;
-	
+	private String[] wal_cmds = {"insert","delete","update","begin","commit"};
 	public SQLHandler(Manager manager) {
 		this.manager = manager;
 	}
 	
 	public String evaluate(String statement, long session) {
 		System.out.println("session:" +session + "  " + statement);
+		String cmd = statement.split("\\s+")[0];
+		if(Arrays.asList(wal_cmds).contains(cmd))
+		{
+			manager.writelog(statement);
+		}
 		//词法分析
 		SQLLexer lexer = new SQLLexer(CharStreams.fromString(statement));
 		lexer.removeErrorListeners();
