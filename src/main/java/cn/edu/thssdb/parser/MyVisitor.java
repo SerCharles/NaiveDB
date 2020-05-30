@@ -80,7 +80,7 @@ public class MyVisitor extends SQLBaseVisitor {
     public String visitBegin_transaction_stmt(SQLParser.Begin_transaction_stmtContext ctx) {
         try{
             if (!manager.transaction_sessions.contains(session)){
-                manager.persist();
+                manager.persistAll();
                 manager.transaction_sessions.add(session);
                 ArrayList<String> s_lock_tables = new ArrayList<>();
                 ArrayList<String> x_lock_tables = new ArrayList<>();
@@ -113,7 +113,7 @@ public class MyVisitor extends SQLBaseVisitor {
                 }
                 table_list.clear();
                 manager.x_lock_dict.put(session,table_list);
-                manager.persist();
+                manager.persistAll();
             }else{
                 System.out.println("session not in a transaction.");
             }

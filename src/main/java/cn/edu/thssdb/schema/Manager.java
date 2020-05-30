@@ -132,6 +132,21 @@ public class Manager {
         }
     }
 
+    public void persistAll()
+    {
+        try {
+            lock.writeLock().lock();
+            for (Database db : databases.values())
+            {
+                db.quit();
+            }
+            persist();
+        }
+        finally {
+            lock.writeLock().unlock();
+        }
+    }
+
     public void switchDatabase(String databaseName) {
         try {
             lock.readLock().lock();
