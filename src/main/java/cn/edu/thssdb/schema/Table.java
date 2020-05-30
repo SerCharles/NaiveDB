@@ -420,6 +420,69 @@ public class Table implements Iterable<Row> {
             lock.writeLock().unlock();
         }
     }
+
+    /**
+     * 描述：用于sql parser的插入函数 重载了事务
+     * 参数：column数组，value数组，都是string形式
+     * 返回：无，如果不合法会抛出异常
+     */
+    public void insert(String[] columns, String[] values, boolean isTransaction) {
+        if (columns == null || values == null)
+            throw new SchemaLengthMismatchException(this.columns.size(), 0);
+
+        // match columns and reorder entries
+        int schemaLen = this.columns.size();
+        if (columns.length > schemaLen) {
+            throw new SchemaLengthMismatchException(schemaLen, columns.length);
+        }
+        else if(values.length > schemaLen) {
+            throw new SchemaLengthMismatchException(schemaLen, values.length);
+        }
+        else if (columns.length != values.length) {
+            throw new SchemaLengthMismatchException(columns.length, values.length);
+        }
+        ArrayList<Entry> orderedEntries = new ArrayList<>();
+        for (Column column : this.columns)
+        {
+            int equal_num = 0;
+            int place = -1;
+            for (int i = 0; i < values.length; i++)
+            {
+                if (columns[i].equals(column.getName().toLowerCase()))
+                {
+                    place = i;
+                    equal_num ++;
+                }
+            }
+            if (equal_num > 1)
+            {
+                throw new DuplicateColumnException(column.toString());
+            }
+            Comparable the_entry_value = null;
+            if (equal_num == 0 || place < 0 || place >= columns.length)
+            {
+                the_entry_value = null;
+            }
+            else{
+                the_entry_value = ParseValue(column, values[place]);
+            }
+            JudgeValid(column, the_entry_value);
+            Entry the_entry = new Entry(the_entry_value);
+            orderedEntries.add(the_entry);
+        }
+
+        // write to cache
+        try {
+            lock.writeLock().lock();
+            cache.insertRow(orderedEntries, primaryIndex, isTransaction);
+        }
+        catch (DuplicateKeyException e) {
+            throw e;
+        }
+        finally {
+            lock.writeLock().unlock();
+        }
+    }
     
     /**
      * 描述：用于sql parser的插入函数
@@ -453,6 +516,47 @@ public class Table implements Iterable<Row> {
         try {
             lock.writeLock().lock();
             cache.insertRow(orderedEntries, primaryIndex);
+        }
+        catch (DuplicateKeyException e) {
+            throw e;
+        }
+        finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    /**
+     * 描述：用于sql parser的插入函数 重载了事务
+     * 参数：value数组，string形式
+     * 返回：无，如果不合法会抛出异常
+     */
+    public void insert(String[] values, boolean isTransaction) {
+        if (values == null)
+            throw new SchemaLengthMismatchException(this.columns.size(), 0);
+
+        // match columns and reorder entries
+        int schemaLen = this.columns.size();
+        if(values.length > schemaLen) {
+            throw new SchemaLengthMismatchException(schemaLen, values.length);
+        }
+
+        ArrayList<Entry> orderedEntries = new ArrayList<>();
+        for (int i = 0; i < this.columns.size(); i ++)
+        {
+            Column column = this.columns.get(i);
+            Comparable the_entry_value = null;
+            if(i >= 0 && i < values.length) {
+                the_entry_value = ParseValue(column, values[i]);
+            }
+            JudgeValid(column, the_entry_value);
+            Entry the_entry = new Entry(the_entry_value);
+            orderedEntries.add(the_entry);
+        }
+
+        // write to cache
+        try {
+            lock.writeLock().lock();
+            cache.insertRow(orderedEntries, primaryIndex, isTransaction);
         }
         catch (DuplicateKeyException e) {
             throw e;
@@ -506,6 +610,24 @@ public class Table implements Iterable<Row> {
             if(the_logic == null || the_logic.GetResult(the_row) == ResultType.TRUE) {
                 Entry primary_entry = row.getEntries().get(primaryIndex);
                 delete(primary_entry);
+                count ++;
+            }
+        }
+        return "Deleted " + count + " items.";
+    }
+
+    /**
+     * 描述：用于sql parser的删除函数 重载了事务
+     * 参数：c逻辑
+     * 返回：字符串，表明删除了多少数据
+     */
+    public String delete(Logic the_logic, boolean isTransaction) {
+        int count = 0;
+        for(Row row : this) {
+            JointRow the_row = new JointRow(row, this);
+            if(the_logic == null || the_logic.GetResult(the_row) == ResultType.TRUE) {
+                Entry primary_entry = row.getEntries().get(primaryIndex);
+                delete(primary_entry, isTransaction);
                 count ++;
             }
         }
@@ -626,8 +748,49 @@ public class Table implements Iterable<Row> {
         }
         return "Updated " + count + " items.";
     }
-    
-    
+
+    /**
+     * 描述：用于sql parser的更新函数 重载了事务的版本
+     * 参数：待更新列名，待更新值（string类型），逻辑
+     * 返回：字符串，表明更新了多少数据
+     */
+    public String update(String column_name, Comparer value, Logic the_logic, boolean isTransaction) {
+        int count = 0;
+        for(Row row : this) {
+            JointRow the_row = new JointRow(row, this);
+            if(the_logic == null || the_logic.GetResult(the_row) == ResultType.TRUE) {
+                Entry primary_entry = row.getEntries().get(primaryIndex);
+                //找到对应column
+                boolean whether_find = false;
+                Column the_column = null;
+                for(Column column : this.columns) {
+                    if(column.getName().equals(column_name)) {
+                        the_column = column;
+                        whether_find = true;
+                        break;
+                    }
+                }
+                if(the_column == null || whether_find == false) {
+                    throw new AttributeNotFoundException(column_name);
+                }
+
+                //值处理，合法性判断
+                Comparable the_entry_value = ParseValue(the_column, value);
+
+                JudgeValid(the_column, the_entry_value);
+
+                //插入
+                Entry the_entry = new Entry(the_entry_value);
+                ArrayList<Column> the_column_list = new ArrayList<>();
+                the_column_list.add(the_column);
+                ArrayList<Entry> the_entry_list = new ArrayList<>();
+                the_entry_list.add(the_entry);
+                update(primary_entry, the_column_list, the_entry_list, isTransaction);
+                count ++;
+            }
+        }
+        return "Updated " + count + " items.";
+    }
 
     public Row get(Entry entry)
     {
