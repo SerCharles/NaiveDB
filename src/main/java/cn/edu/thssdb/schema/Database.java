@@ -290,5 +290,24 @@ public class Database {
         }
         return new JointTable(my_tables, logic);
     }
+
+    /**
+     * 描述：取消table中的所有pinned页
+     * 参数：table names
+     * 返回：无
+     */
+    public void unpinTables(ArrayList<String> table_names)
+    {
+        try {
+            lock.writeLock().lock();
+            for (String table_name : table_names) {
+                if (!tables.containsKey(table_name))
+                    throw new TableNotExistException(table_name);
+                tables.get(table_name).unpin();
+            }
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
 }
 

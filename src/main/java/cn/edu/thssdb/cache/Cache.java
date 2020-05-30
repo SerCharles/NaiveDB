@@ -340,6 +340,12 @@ public class Cache {
         index = null;
     }
 
+    public void unpin()
+    {
+        for (Page page : pages.values())
+            page.setPinned(false);
+    }
+
     private void exchangePage(int pageId, int primaryKey)
     {
         if (pageNum >= maxPageNum)

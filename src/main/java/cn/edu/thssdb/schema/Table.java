@@ -742,6 +742,16 @@ public class Table implements Iterable<Row> {
         }
         return result;
     }
+
+    /**
+     * 描述：取消整个表中所有pinned的页
+     * 参数：无
+     * 返回：无
+     */
+    public void unpin()
+    {
+        cache.unpin();
+    }
     
     private class TableIterator implements Iterator<Row> {
         private Iterator<Pair<Entry, Row>> iterator;
