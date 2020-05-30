@@ -73,7 +73,6 @@ public class IServiceHandler implements IService.Iface {
    * 描述：执行指令
    * 只有已经连接的客户端才能执行指令
    * 当前就是读取一行然后扔进查询模块执行，然后结果返回回去
-   * //TODO 实现什么abort之类的，事务操作
    */
   public ExecuteStatementResp executeStatement(ExecuteStatementReq req) throws TException {
   

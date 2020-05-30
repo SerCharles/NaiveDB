@@ -6,8 +6,13 @@ import javafx.util.Pair;
 import cn.edu.thssdb.query.*;
 import cn.edu.thssdb.type.*;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.StringJoiner;
+
+import static cn.edu.thssdb.utils.Global.DATA_DIRECTORY;
 
 /**
  * 描述:sql语义分析类
@@ -128,6 +133,7 @@ public class MyVisitor extends SQLBaseVisitor {
         try{
             if (manager.transaction_sessions.contains(session)){
                 Database the_database = GetCurrentDB();
+                String db_name = the_database.get_name();
                 manager.transaction_sessions.remove(session);
                 ArrayList<String> table_list = manager.x_lock_dict.get(session);
                 for (String table_name : table_list) {
@@ -137,6 +143,23 @@ public class MyVisitor extends SQLBaseVisitor {
                 }
                 table_list.clear();
                 manager.x_lock_dict.put(session,table_list);
+
+                String log_name = DATA_DIRECTORY + db_name + ".log";
+                File file = new File(log_name);
+                if(file.exists() && file.isFile() && file.length()>1000)
+                {
+                    System.out.println("Clear database log");
+                    try
+                    {
+                        FileWriter writer=new FileWriter(log_name);
+                        writer.write( "");
+                        writer.close();
+                    } catch (IOException e)
+                    {
+                        e.printStackTrace();
+                    }
+                    manager.persistdb(db_name);
+                }
             }else{
                 System.out.println("session not in a transaction.");
             }

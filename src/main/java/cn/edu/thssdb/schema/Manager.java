@@ -139,23 +139,31 @@ public class Manager {
 
     public void readlog(String database_name)
     {
-        System.out.println("Read WAL log to recover database.");
+
         String log_name = DATA_DIRECTORY + database_name + ".log";
-        evaluate("use "+database_name);
-        try
+        File file = new File(log_name);
+        if(file.exists() && file.isFile())
         {
-            InputStreamReader reader = new InputStreamReader(new FileInputStream(log_name));
-            BufferedReader bufferedReader = new BufferedReader(reader);
-            String line = null;
-            while ((line = bufferedReader.readLine()) != null)
+            System.out.println("log file size: " + file.length() + " Byte");
+            System.out.println("Read WAL log to recover database.");
+            evaluate("use "+database_name);
+
+            try
             {
-                evaluate(line);
+                InputStreamReader reader = new InputStreamReader(new FileInputStream(log_name));
+                BufferedReader bufferedReader = new BufferedReader(reader);
+                String line = null;
+                bufferedReader.read();
+                while ((line = bufferedReader.readLine()) != null)
+                {
+                    evaluate(line);
+                }
+                reader.close();
+                bufferedReader.close();
+            } catch (IOException e)
+            {
+                e.printStackTrace();
             }
-            reader.close();
-            bufferedReader.close();
-        } catch (IOException e)
-        {
-            e.printStackTrace();
         }
     }
 
@@ -175,14 +183,12 @@ public class Manager {
         }
     }
 
-    public void persistAll()
+    public void persistdb(String db_name)
     {
         try {
             lock.writeLock().lock();
-            for (Database db : databases.values())
-            {
-                db.quit();
-            }
+            Database db = databases.get(db_name);
+            db.quit();
             persist();
         }
         finally {
