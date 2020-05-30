@@ -53,6 +53,8 @@ public class Database {
     
             Table newTable = new Table(this.name, name, columns);
             tables.put(name, newTable);
+            persist();
+            //newTable.persist();
         } finally {
             lock.writeLock().unlock();
         }
