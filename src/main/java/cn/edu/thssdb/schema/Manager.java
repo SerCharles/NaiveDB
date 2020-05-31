@@ -19,10 +19,10 @@ import static cn.edu.thssdb.utils.Global.DATA_DIRECTORY;
 public class Manager {
     private HashMap<String, Database> databases;
     private Database currentDB;
-    public ArrayList<Long> transaction_sessions;
-    public ArrayList<Long> session_queue;
-    public HashMap<Long, ArrayList<String>> s_lock_dict;
-    public HashMap<Long, ArrayList<String>> x_lock_dict;
+    public ArrayList<Long> transaction_sessions;           //处于transaction状态的session列表
+    public ArrayList<Long> session_queue;                  //由于锁阻塞的session队列
+    public HashMap<Long, ArrayList<String>> s_lock_dict;       //记录每个session取得了哪些表的s锁
+    public HashMap<Long, ArrayList<String>> x_lock_dict;       //记录每个session取得了哪些表的x锁
 
     private static ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
