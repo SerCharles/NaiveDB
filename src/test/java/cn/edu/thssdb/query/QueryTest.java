@@ -223,7 +223,7 @@ public class QueryTest {
     /**
      *描述：测试select功能
      */
-    @Test
+    /*@Test
     public void SelectTest()
     {
         Column student[] = {new Column("id", ColumnType.INT, 1, true, 10),
@@ -482,12 +482,12 @@ public class QueryTest {
         System.out.println("test 18:\n" + university.select(search3, query0, logic11, true));
     
         manager.deleteDatabase("University");
-    }
+    }*/
     
     /**
      *描述：测试insert功能
      */
-    @Test
+    /*@Test
     public void InsertTest() {
         Column student[] = {new Column("id", ColumnType.INT, 1, true, 10),
                 new Column("name", ColumnType.STRING, 0, true, 10),
@@ -711,12 +711,12 @@ public class QueryTest {
         System.out.println("test 15:" + university.select(null, query15, null, true));
     
         manager.deleteDatabase("University");
-    }
+    }*/
     
     /**
      *描述：测试delete功能
      */
-    @Test
+    /*@Test
     public void DeleteTest() {
         Column student[] = {new Column("id", ColumnType.INT, 1, true, 10),
                 new Column("name", ColumnType.STRING, 0, true, 10),
@@ -771,14 +771,6 @@ public class QueryTest {
         String[] column_8 = {"dept_name", "involution"};
         String[] value_8 = {"'cst'", "99.4"};
         
-        /*university.insert("student", column_1, value_1);
-        university.insert("student", column_2, value_2);
-        university.insert("student", column_3, value_3);
-        university.insert("grade", column_4, value_4);
-        university.insert("grade", column_5, value_5);
-        university.insert("grade", column_6, value_6);
-        university.insert("department", column_7, value_7);
-        university.insert("department", column_8, value_8);*/
     
         Comparer name_comp = new Comparer(ComparerType.COLUMN, "name");
         Comparer sgl_comp = new Comparer(ComparerType.STRING, "sgl");
@@ -869,11 +861,12 @@ public class QueryTest {
             }
         }
         manager.deleteDatabase("University");
-    }
+    }*/
     
     /**
      *描述：测试update功能
      */
+    /*
     @Test
     public void UpdateTest() {
         Column student[] = {new Column("id", ColumnType.INT, 1, true, 10),
@@ -929,14 +922,7 @@ public class QueryTest {
         String[] column_8 = {"dept_name", "involution"};
         String[] value_8 = {"'cst'", "99.4"};
         
-        /*university.insert("student", column_1, value_1);
-        university.insert("student", column_2, value_2);
-        university.insert("student", column_3, value_3);
-        university.insert("grade", column_4, value_4);
-        university.insert("grade", column_5, value_5);
-        university.insert("grade", column_6, value_6);
-        university.insert("department", column_7, value_7);
-        university.insert("department", column_8, value_8);*/
+
     
         Comparer name_comp = new Comparer(ComparerType.COLUMN, "name");
         Comparer sgl_comp = new Comparer(ComparerType.STRING, "sgl");
@@ -1061,7 +1047,7 @@ public class QueryTest {
             }
         }
         manager.deleteDatabase("University");
-    }
+    }*/
     
 
 }
