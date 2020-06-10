@@ -160,10 +160,10 @@ public class Client {
       println("Not connected yet!");
       return;
     }
-    DisconnetResp the_request = new DisconnetResp();
-    the_request.setStatus(new Status(Global.SUCCESS_CODE));
+    DisconnectReq the_request = new DisconnectReq(session);
+    //the_request.setStatus(new Status(Global.SUCCESS_CODE));
     try {
-      DisconnetResp the_respond = client.disconnect(the_request);
+      DisconnectResp the_respond = client.disconnect(the_request);
       println(the_respond.toString());
       if(the_respond.getStatus().code == Global.SUCCESS_CODE) {
         session = -1;

@@ -9,6 +9,7 @@
   <version>1.0-SNAPSHOT</version>
   <properties>
     <thrift.version>0.13.0</thrift.version>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
   <build>
     <plugins>
