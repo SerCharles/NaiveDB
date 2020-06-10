@@ -24,16 +24,29 @@ public class QueryResult {
   private ArrayList<MetaInfo> mMetaInfoList;
   private boolean mWhetherDistinct;
   private HashSet<String> mHashSet;
+  public boolean mWhetherRight;
+  public String mErrorMessage;
   public ArrayList<Integer> mColumnIndex;
-  private List<String> mColumnName;
+  public List<String> mColumnName;
+  public ArrayList<Row> mResultList;
   
+  //正常构造函数
   public QueryResult(QueryTable queryTable, String[] selectColumns, boolean whetherDistinct) {
     this.mTable = queryTable;
     this.mWhetherDistinct = whetherDistinct;
     this.mHashSet = new HashSet<>();
+    mWhetherRight = true;
+    mErrorMessage = "";
     this.mMetaInfoList = new ArrayList<MetaInfo>();
     this.mMetaInfoList.addAll(queryTable.GenerateMetaInfo());
+    this.mResultList = new ArrayList<Row>();
     InitColumns(selectColumns);
+  }
+  
+  //异常构造函数
+  public QueryResult(String errorMessge) {
+    mWhetherRight = false;
+    mErrorMessage = errorMessge;
   }
   
   /**
@@ -157,8 +170,7 @@ public class QueryResult {
    *参数：无
    *返回：所有搜索结果，返回的每个row都是和mColumnName一一对应的，如果distinct还会用哈希判重
    */
-  public ArrayList<Row> GenerateQueryRecords() {
-    ArrayList<Row> result_list = new ArrayList<>();
+  public void GenerateQueryRecords() {
     while(mTable.hasNext()) {
       JointRow new_row = mTable.next();
       if(new_row == null) {
@@ -173,12 +185,11 @@ public class QueryResult {
       Row the_row = new Row(entries);
       String row_string = the_row.toString();
       if(!mWhetherDistinct || !mHashSet.contains(row_string)) {
-        result_list.add(the_row);
+        mResultList.add(the_row);
         if(mWhetherDistinct) {
           mHashSet.add(row_string);
         }
       }
     }
-    return result_list;
   }
 }

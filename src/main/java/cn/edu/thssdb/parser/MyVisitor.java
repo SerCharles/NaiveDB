@@ -36,50 +36,82 @@ public class MyVisitor extends SQLBaseVisitor {
         return current_base;
     }
 
-    public String visitParse(SQLParser.ParseContext ctx) {
+    public ArrayList<QueryResult> visitParse(SQLParser.ParseContext ctx) {
         return visitSql_stmt_list(ctx.sql_stmt_list());
     }
 
-    public String visitSql_stmt_list(SQLParser.Sql_stmt_listContext ctx) {
+    public ArrayList<QueryResult> visitSql_stmt_list(SQLParser.Sql_stmt_listContext ctx) {
         StringJoiner sj = new StringJoiner("\n\n");
+        ArrayList<QueryResult> result = new ArrayList<QueryResult>();
         for (SQLParser.Sql_stmtContext subCtx : ctx.sql_stmt())
-            sj.add(visitSql_stmt(subCtx));
-        return sj.toString();
+            result.add(visitSql_stmt(subCtx));
+        return result;
     }
     
-    public String visitSql_stmt(SQLParser.Sql_stmtContext ctx) {
-        if (ctx.create_table_stmt() != null)
-            return visitCreate_table_stmt(ctx.create_table_stmt());
-        if (ctx.create_db_stmt() != null)
-            return visitCreate_db_stmt(ctx.create_db_stmt());
-        if (ctx.drop_db_stmt() != null)
-            return visitDrop_db_stmt(ctx.drop_db_stmt());
-        if (ctx.begin_transaction_stmt() != null)
-            return visitBegin_transaction_stmt(ctx.begin_transaction_stmt());
-        if (ctx.commit_stmt() != null)
-            return visitCommit_stmt(ctx.commit_stmt());
-        if (ctx.auto_begin_transaction_stmt() != null)
-            return visitAuto_begin_transaction_stmt(ctx.auto_begin_transaction_stmt());
-        if (ctx.auto_commit_stmt() != null)
-            return visitAuto_commit_stmt(ctx.auto_commit_stmt());
-        if(ctx.show_meta_stmt() != null)
-            return visitShow_meta_stmt(ctx.show_meta_stmt());
-        if (ctx.delete_stmt() != null)
-            return visitDelete_stmt(ctx.delete_stmt());
-        if (ctx.drop_table_stmt() != null)
-            return visitDrop_table_stmt(ctx.drop_table_stmt());
-        if (ctx.insert_stmt() != null)
-            return visitInsert_stmt(ctx.insert_stmt());
-        if (ctx.select_stmt() != null)
+    public QueryResult visitSql_stmt(SQLParser.Sql_stmtContext ctx) {
+        if (ctx.create_table_stmt() != null) {
+            String message = visitCreate_table_stmt(ctx.create_table_stmt());
+            return new QueryResult(message);
+        }
+        if (ctx.create_db_stmt() != null) {
+            String message = visitCreate_db_stmt(ctx.create_db_stmt());
+            return new QueryResult(message);
+        }
+        if (ctx.drop_db_stmt() != null) {
+            String message = visitDrop_db_stmt(ctx.drop_db_stmt());
+            return new QueryResult(message);
+        }
+        if (ctx.begin_transaction_stmt() != null) {
+            String message = visitBegin_transaction_stmt(ctx.begin_transaction_stmt());
+            return new QueryResult(message);
+        }
+        if (ctx.commit_stmt() != null) {
+            String message = visitCommit_stmt(ctx.commit_stmt());
+            return new QueryResult(message);
+        }
+        if (ctx.auto_begin_transaction_stmt() != null) {
+            String message = visitAuto_begin_transaction_stmt(ctx.auto_begin_transaction_stmt());
+            return new QueryResult(message);
+        }
+        if (ctx.auto_commit_stmt() != null) {
+            String message = visitAuto_commit_stmt(ctx.auto_commit_stmt());
+            return new QueryResult(message);
+        }
+        if(ctx.show_meta_stmt() != null) {
+            String message = visitShow_meta_stmt(ctx.show_meta_stmt());
+            return new QueryResult(message);
+        }
+        if (ctx.delete_stmt() != null) {
+            String message = visitDelete_stmt(ctx.delete_stmt());
+            return new QueryResult(message);
+        }
+        if (ctx.drop_table_stmt() != null) {
+            String message = visitDrop_table_stmt(ctx.drop_table_stmt());
+            return new QueryResult(message);
+        }
+        if (ctx.insert_stmt() != null) {
+            String message = visitInsert_stmt(ctx.insert_stmt());
+            return new QueryResult(message);
+        }
+        if (ctx.select_stmt() != null) {
             return visitSelect_stmt(ctx.select_stmt());
-        if (ctx.use_db_stmt() != null)
-            return visitUse_db_stmt(ctx.use_db_stmt());
-        if (ctx.update_stmt() != null)
-            return visitUpdate_stmt(ctx.update_stmt());
-        if (ctx.show_table_stmt() != null)
-            return visitShow_table_stmt(ctx.show_table_stmt());
-        if (ctx.quit_stmt() != null)
-            return visitQuit_stmt();
+        }
+        if (ctx.use_db_stmt() != null) {
+            String message = visitUse_db_stmt(ctx.use_db_stmt());
+            return new QueryResult(message);
+        }
+        if (ctx.update_stmt() != null) {
+            String message = visitUpdate_stmt(ctx.update_stmt());
+            return new QueryResult(message);
+        }
+        if (ctx.show_table_stmt() != null) {
+            String message = visitShow_table_stmt(ctx.show_table_stmt());
+            return new QueryResult(message);
+        }
+        if (ctx.quit_stmt() != null) {
+            String message = visitQuit_stmt();
+            return new QueryResult(message);
+        }
         return null;
     }
 
@@ -595,7 +627,7 @@ public class MyVisitor extends SQLBaseVisitor {
     /**
      * 描述：处理查询元素
      */
-    public String visitSelect_stmt(SQLParser.Select_stmtContext ctx) {
+    public QueryResult visitSelect_stmt(SQLParser.Select_stmtContext ctx) {
         Database the_database = GetCurrentDB();
         boolean distinct = false;
         if (ctx.K_DISTINCT() != null)
@@ -629,7 +661,8 @@ public class MyVisitor extends SQLBaseVisitor {
             }
 
         } catch (Exception e) {
-            return e.toString();
+            QueryResult error_result = new QueryResult(e.toString());
+            return error_result;
         }
         if(the_query_table == null) {
             throw new NoSelectedTableException();
@@ -698,14 +731,15 @@ public class MyVisitor extends SQLBaseVisitor {
                 }
             }
             try {
-                String result = the_database.select(columns_selected, the_query_table, logic, distinct);
+                QueryResult result = the_database.select(columns_selected, the_query_table, logic, distinct);
                 for (String table_name : table_names) {
                     Table the_table = the_database.get(table_name);
                     the_table.free_s_lock(session);
                 }
                 return result;
             } catch (Exception e) {
-                return e.toString();
+                QueryResult error_result = new QueryResult(e.toString());
+                return error_result;
             }
 
         }else
@@ -713,7 +747,8 @@ public class MyVisitor extends SQLBaseVisitor {
             try {
                 return the_database.select(columns_selected, the_query_table, logic, distinct);
             } catch (Exception e) {
-                return e.toString();
+                QueryResult error_result = new QueryResult(e.toString());
+                return error_result;
             }
         }
     }

@@ -107,8 +107,8 @@ public class ClientTest {
 
   private static void queryData(long sessionId) throws TException {
     long startTime = System.currentTimeMillis();
-    String statement = "select * from person;";
-    List<String> columnsList = new ArrayList<>(Arrays.asList("name", "ID"));
+    String statement = "select name, ID from person;";
+    List<String> columnsList = new ArrayList<>(Arrays.asList("name", "id"));
     List<List<String>> rowList = new ArrayList<>(Arrays.asList(
         new ArrayList<>(Arrays.asList("Anna", "20")),
         new ArrayList<>(Arrays.asList("Bob", "22")),

@@ -1,5 +1,6 @@
 package cn.edu.thssdb.parser;
 
+import cn.edu.thssdb.query.QueryResult;
 import cn.edu.thssdb.schema.Manager;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
@@ -17,7 +18,7 @@ public class SQLHandler{
 		this.manager = manager;
 	}
 	
-	public String evaluate(String statement, long session) {
+	public ArrayList<QueryResult> evaluate(String statement, long session) {
 		System.out.println("session:" +session + "  " + statement);
 		String cmd = statement.split("\\s+")[0];
 		if(Arrays.asList(wal_cmds).contains(cmd) && session==0)
@@ -38,9 +39,13 @@ public class SQLHandler{
 		//语义分析
 		try {
 			MyVisitor visitor = new MyVisitor(manager, session);
-			return String.valueOf(visitor.visitParse(parser.parse()));
+			return visitor.visitParse(parser.parse());
 		} catch (Exception e) {
-			return "Exception: illegal SQL statement! Error message: " + e.getMessage();
+			String message = "Exception: illegal SQL statement! Error message: " + e.getMessage();
+			QueryResult the_result = new QueryResult(message);
+			ArrayList<QueryResult> result = new ArrayList<>();
+			result.add(the_result);
+			return result;
 		}
 	}
 

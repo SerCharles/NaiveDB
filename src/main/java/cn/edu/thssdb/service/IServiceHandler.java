@@ -1,13 +1,17 @@
 package cn.edu.thssdb.service;
 
 import cn.edu.thssdb.parser.SQLHandler;
+import cn.edu.thssdb.query.QueryResult;
 import cn.edu.thssdb.rpc.thrift.*;
+import cn.edu.thssdb.schema.Column;
 import cn.edu.thssdb.schema.Manager;
+import cn.edu.thssdb.schema.Row;
 import cn.edu.thssdb.utils.Global;
 import org.apache.thrift.TException;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 public class IServiceHandler implements IService.Iface {
   public static SQLHandler handler;
@@ -55,7 +59,7 @@ public class IServiceHandler implements IService.Iface {
    */
   public DisconnectResp disconnect(DisconnectReq req) throws TException {
     DisconnectResp resp = new DisconnectResp();
-    //resp.setStatus(new Status(Global.SUCCESS_CODE));
+    resp.setStatus(new Status(Global.SUCCESS_CODE));
     return resp;
   }
   
@@ -79,7 +83,7 @@ public class IServiceHandler implements IService.Iface {
 
     String command = req.statement.toLowerCase();
     String cmd = command.split("\\s+")[0];
-    String result;
+    ArrayList<QueryResult> result;
     if((cmd.equals("insert") || cmd.equals("update") || cmd.equals("delete") || cmd.equals("select")) && !manager.transaction_sessions.contains(the_session))
     {
       handler.evaluate("autobegin transaction", the_session);
@@ -90,12 +94,35 @@ public class IServiceHandler implements IService.Iface {
     {
       result = handler.evaluate(command, the_session);
     }
-
-    ArrayList<String> the_result = new ArrayList<>();
-    the_result.add(result);
-    
+  
     the_response.setStatus(new Status(Global.SUCCESS_CODE));
-    the_response.addToRowList(the_result);
+  
+    if(result == null) {
+      the_response.addToColumnsList("null");
+    }
+    //有且仅有一个正确查询
+    else if(result.size() == 1 && result.get(0) != null && result.get(0).mWhetherRight == true) {
+      for(Row row : result.get(0).mResultList) {
+        ArrayList<String> the_result = row.toStringList();
+        the_response.addToRowList(the_result);
+      }
+      for(String column_name: result.get(0).mColumnName) {
+        the_response.addToColumnsList(column_name);
+      }
+    }
+    
+    //1-多条非查询/错误
+    else {
+      for(QueryResult item : result) {
+        if(item == null) {
+          the_response.addToColumnsList("null");
+        }
+        else {
+          the_response.addToColumnsList(item.mErrorMessage);
+        }
+      }
+    }
+    
     return the_response;
   }
 }
