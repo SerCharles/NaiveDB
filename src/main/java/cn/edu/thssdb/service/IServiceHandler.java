@@ -81,10 +81,10 @@ public class IServiceHandler implements IService.Iface {
       return the_response;
     }
 
-    String command = req.statement.toLowerCase();
+    String command = req.statement;
     String cmd = command.split("\\s+")[0];
     ArrayList<QueryResult> result;
-    if((cmd.equals("insert") || cmd.equals("update") || cmd.equals("delete") || cmd.equals("select")) && !manager.transaction_sessions.contains(the_session))
+    if((cmd.toLowerCase().equals("insert") || cmd.toLowerCase().equals("update") || cmd.toLowerCase().equals("delete") || cmd.toLowerCase().equals("select")) && !manager.transaction_sessions.contains(the_session))
     {
       handler.evaluate("autobegin transaction", the_session);
       result = handler.evaluate(command, the_session);
