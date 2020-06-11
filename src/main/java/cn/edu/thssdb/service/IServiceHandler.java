@@ -81,20 +81,25 @@ public class IServiceHandler implements IService.Iface {
       return the_response;
     }
 
-    String command = req.statement;
-    String cmd = command.split("\\s+")[0];
-    ArrayList<QueryResult> result;
-    if((cmd.toLowerCase().equals("insert") || cmd.toLowerCase().equals("update") || cmd.toLowerCase().equals("delete") || cmd.toLowerCase().equals("select")) && !manager.transaction_sessions.contains(the_session))
-    {
-      handler.evaluate("autobegin transaction", the_session);
-      result = handler.evaluate(command, the_session);
-      handler.evaluate("autocommit", the_session);
-
-    }else
-    {
-      result = handler.evaluate(command, the_session);
-    }
+    String command_full = req.statement;
+    String[] commands = command_full.split(";");
+    ArrayList<QueryResult> result = new ArrayList<>();
   
+    for(String command : commands) {
+      command = command.trim();
+      String cmd = command.split("\\s+")[0];
+      ArrayList<QueryResult> the_result;
+      if ((cmd.toLowerCase().equals("insert") || cmd.toLowerCase().equals("update") || cmd.toLowerCase().equals("delete") || cmd.toLowerCase().equals("select")) && !manager.transaction_sessions.contains(the_session)) {
+        handler.evaluate("autobegin transaction", the_session);
+        the_result = handler.evaluate(command, the_session);
+        result.addAll(the_result);
+        handler.evaluate("autocommit", the_session);
+    
+      } else {
+        the_result = handler.evaluate(command, the_session);
+        result.addAll(the_result);
+      }
+    }
     the_response.setStatus(new Status(Global.SUCCESS_CODE));
   
     if(result == null) {

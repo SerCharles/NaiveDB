@@ -51,32 +51,35 @@ public class ClientTest {
   }
   
   private static long TestBasic(long sessionId) throws TException {
-  
-    String[] statements_build = {
-            "create database university;",
-            "use university;",
-            "create table student (name string(10) not null, id int, dept string(10) not null, age int, primary key(id));"};
-    for (String statement : statements_build) {
-      ExecuteStatementReq req = new ExecuteStatementReq(sessionId, statement);
+    {
+      String statement_build =
+              "create database university;" +
+                      "use university;" +
+                      "create table student (name string(10) not null, id int, dept string(10) not null, age int, primary key(id))";
+      ExecuteStatementReq req = new ExecuteStatementReq(sessionId, statement_build);
       ExecuteStatementResp resp = client.executeStatement(req);
-      println(resp.columnsList.get(0));
+      for (String item : resp.columnsList) {
+        println(item);
+      }
     }
-    
+  
+    String statement_insert =
+            "INSERT INTO student(id, age, name, dept) VALUES (1, 21, 'sgl', 'THSS');" +
+                    "INSERT INTO student(id, age, name, dept) VALUES (2, null, 'sj', 'THSS');" +
+                    "INSERT INTO student(id, age, name, dept) VALUES (3, 21, 'borkball', 'CST');"+
+                    "INSERT INTO student(id, age, name) VALUES (4, 20, 'lsj');"+
+                    "INSERT INTO student(id, dept, name) VALUES (4, 'THSS', 'lsj');"+
+                    "INSERT INTO student VALUES ('kebab', 5, 'CST', 1453);"+
+                    "INSERT INTO student VALUES ('kebab', 6, 'CST');"+
+                    "INSERT INTO student VALUES ('kebab', 7);"+
+                    "INSERT INTO student VALUES ('kebab', 7, 'CST');";
     //测试新增
-    String[] statements_insert = {
-            "INSERT INTO student(id, age, name, dept) VALUES (1, 21, 'sgl', 'THSS');",
-            "INSERT INTO student(id, age, name, dept) VALUES (2, null, 'sj', 'THSS');",
-            "INSERT INTO student(id, age, name, dept) VALUES (3, 21, 'borkball', 'CST');",
-            "INSERT INTO student(id, age, name) VALUES (4, 20, 'lsj');",
-            "INSERT INTO student(id, dept, name) VALUES (4, 'THSS', 'lsj');",
-            "INSERT INTO student VALUES ('kebab', 5, 'CST', 1453);",
-            "INSERT INTO student VALUES ('kebab', 6, 'CST');",
-            "INSERT INTO student VALUES ('kebab', 7);",
-            "INSERT INTO student VALUES ('kebab', 7, 'CST');"};
-    for (String statement : statements_insert) {
-      ExecuteStatementReq req = new ExecuteStatementReq(sessionId, statement);
+    {
+      ExecuteStatementReq req = new ExecuteStatementReq(sessionId, statement_insert);
       ExecuteStatementResp resp = client.executeStatement(req);
-      println(resp.columnsList.get(0));
+      for (String item : resp.columnsList) {
+        println(item);
+      }
     }
     
     String select_all = "Select id, age, name, dept from student";
@@ -181,10 +184,12 @@ public class ClientTest {
       println(resp.getColumnsList().get(0));
     }
   
-    for (String statement : statements_insert) {
-      ExecuteStatementReq req = new ExecuteStatementReq(sessionId, statement);
+    {
+      ExecuteStatementReq req = new ExecuteStatementReq(sessionId, statement_insert);
       ExecuteStatementResp resp = client.executeStatement(req);
-      println(resp.columnsList.get(0));
+      for (String item : resp.columnsList) {
+        println(item);
+      }
     }
 
     String update1 = "update student set name = 'lsj' where name = 'sgl'";
@@ -337,14 +342,16 @@ public class ClientTest {
       }
     }
   
-    String[] statements_drop = {
-            "delete from student;",
-            "drop table student;",
-            "drop database university;"};
-    for (String statement : statements_drop) {
-      ExecuteStatementReq req = new ExecuteStatementReq(sessionId, statement);
+    {
+      String statement_drop =
+              "delete from student;"+
+              "drop table student;"+
+              "drop database university;";
+      ExecuteStatementReq req = new ExecuteStatementReq(sessionId, statement_drop);
       ExecuteStatementResp resp = client.executeStatement(req);
-      println(resp.columnsList.get(0));
+      for (String item : resp.columnsList) {
+        println(item);
+      }
     }
     
     return sessionId;
@@ -640,41 +647,24 @@ public class ClientTest {
   
   private static void TestExample(long sessionId) throws TException {
     {
-      String statement = "create database test;";
+      String statement = "\n  create database test;   use test;\ncreate table person \n(name String(256), ID Int not null, primary key(ID));";
       ExecuteStatementReq req = new ExecuteStatementReq(sessionId, statement);
       ExecuteStatementResp resp = client.executeStatement(req);
       if (resp.getStatus().code == Global.SUCCESS_CODE) {
-        println("Create Database Successfully!");
+        println("Init Successfully!");
       }
     }
-    {
-      String statement = "use test;";
-      ExecuteStatementReq req = new ExecuteStatementReq(sessionId, statement);
-      ExecuteStatementResp resp = client.executeStatement(req);
-      if (resp.getStatus().code == Global.SUCCESS_CODE) {
-        println("Use Database Successfully!");
-      }
-    }
-    {
-      String statement = "create table person (name String(256), ID Int not null, primary key(ID));";
-      ExecuteStatementReq req = new ExecuteStatementReq(sessionId, statement);
-      ExecuteStatementResp resp = client.executeStatement(req);
-      if (resp.getStatus().code == Global.SUCCESS_CODE) {
-        println("Create Table Successfully!");
-      }
-    }
+
     {
       long startTime = System.currentTimeMillis();
-      String[] statements = {"insert into person values ('Anna', 20);",
-              "insert into person values ('Bob', 22);",
-              "insert into person values ('Cindy', 30);"};
-      for (String statement : statements) {
+      String statement = "insert into person values ('Anna', 20);" +
+              "\n  insert into person values ('Bob', 22);" +
+              "\n  insert into person values ('Cindy', 30);";
         ExecuteStatementReq req = new ExecuteStatementReq(sessionId, statement);
         ExecuteStatementResp resp = client.executeStatement(req);
         if (resp.getStatus().code == Global.SUCCESS_CODE) {
           println("Insert Data Successfully!");
         }
-      }
       println("It costs " + (System.currentTimeMillis() - startTime) + "ms.");
     }
     
@@ -699,29 +689,11 @@ public class ClientTest {
     }
   
     {
-      String statement = "delete from person;";
+      String statement = "delete from person;drop table person;drop database test;";
       ExecuteStatementReq req = new ExecuteStatementReq(sessionId, statement);
       ExecuteStatementResp resp = client.executeStatement(req);
       if (resp.getStatus().code == Global.SUCCESS_CODE) {
         println("Delete Data Successfully!");
-      }
-    }
-  
-    {
-      String statement = "drop table person;";
-      ExecuteStatementReq req = new ExecuteStatementReq(sessionId, statement);
-      ExecuteStatementResp resp = client.executeStatement(req);
-      if (resp.getStatus().code == Global.SUCCESS_CODE) {
-        println("Drop Table Successfully!");
-      }
-    }
-  
-    {
-      String statement = "drop database test;";
-      ExecuteStatementReq req = new ExecuteStatementReq(sessionId, statement);
-      ExecuteStatementResp resp = client.executeStatement(req);
-      if (resp.getStatus().code == Global.SUCCESS_CODE) {
-        println("Drop Database Successfully!");
       }
     }
     
