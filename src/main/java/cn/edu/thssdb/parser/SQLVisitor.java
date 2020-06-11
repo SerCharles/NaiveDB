@@ -1,4 +1,4 @@
-// Generated from SQL.g4 by ANTLR 4.8
+// Generated from E:/Programming/MyDB/src/NaiveDB/src/main/java/cn/edu/thssdb/parser\SQL.g4 by ANTLR 4.8
 package cn.edu.thssdb.parser;
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
 

@@ -1,4 +1,4 @@
-// Generated from SQL.g4 by ANTLR 4.8
+// Generated from E:/Programming/MyDB/src/NaiveDB/src/main/java/cn/edu/thssdb/parser\SQL.g4 by ANTLR 4.8
 package cn.edu.thssdb.parser;
 
 import org.antlr.v4.runtime.ParserRuleContext;
@@ -71,6 +71,30 @@ public class SQLBaseListener implements SQLListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitCommit_stmt(SQLParser.Commit_stmtContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterAuto_begin_transaction_stmt(SQLParser.Auto_begin_transaction_stmtContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitAuto_begin_transaction_stmt(SQLParser.Auto_begin_transaction_stmtContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterAuto_commit_stmt(SQLParser.Auto_commit_stmtContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitAuto_commit_stmt(SQLParser.Auto_commit_stmtContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
