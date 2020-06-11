@@ -18,6 +18,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.PrintStream;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
 import java.io.IOException;
 import java.net.InetAddress;
@@ -161,7 +163,6 @@ public class Client {
       return;
     }
     DisconnectReq the_request = new DisconnectReq(session);
-    //the_request.setStatus(new Status(Global.SUCCESS_CODE));
     try {
       DisconnectResp the_respond = client.disconnect(the_request);
       println(the_respond.toString());
@@ -187,18 +188,48 @@ public class Client {
     try {
       ExecuteStatementResp the_response = client.executeStatement(the_request);
       if(the_response.getStatus().code == Global.FAILURE_CODE) {
-        println("Failure!");
+        println("Connection Failure!");
         println(the_response.getStatus().msg);
       }
       else {
-        println("Success!");
-        println(the_response.rowList.get(0).get(0));
-        if(the_response.rowList.get(0).get(0).equals("start transaction"))
-        {
-          Tmod = "(T)";
-        }else if(the_response.rowList.get(0).get(0).equals("commit transaction"))
-        {
-          Tmod = "";
+        
+        //query
+        if(the_response.isSetRowList()) {
+          String column_string = "";
+          //列信息
+          int columns = the_response.columnsList.size();
+          for(int i = 0; i < columns; i ++) {
+            column_string = column_string + the_response.columnsList.get(i);
+            if(i != columns - 1) {
+              column_string += ", ";
+            }
+          }
+          println(column_string);
+          println("----------------------------------------------------------------");
+          //每一行
+          for(List<String> row :the_response.rowList) {
+            String row_string = "";
+            for(int i = 0; i < columns; i ++) {
+              row_string = row_string + row.get(i);
+              if(i != columns - 1) {
+                row_string += ", ";
+              }
+            }
+            println(row_string);
+          }
+        }
+        else {
+          for(String item : the_response.columnsList) {
+            item = item.trim();
+            if(item.equals("start transaction")) {
+              Tmod = "(T)";
+            }
+            else if(item.equals("commit transaction"))
+            {
+              Tmod = "";
+            }
+            println(item);
+          }
         }
       }
     } catch (TException e) {

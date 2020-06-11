@@ -87,6 +87,9 @@ public class IServiceHandler implements IService.Iface {
   
     for(String command : commands) {
       command = command.trim();
+      if(command.length() == 0) {
+        continue;
+      }
       String cmd = command.split("\\s+")[0];
       ArrayList<QueryResult> the_result;
       if ((cmd.toLowerCase().equals("insert") || cmd.toLowerCase().equals("update") || cmd.toLowerCase().equals("delete") || cmd.toLowerCase().equals("select")) && !manager.transaction_sessions.contains(the_session)) {
