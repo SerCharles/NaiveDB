@@ -106,6 +106,9 @@ public class IServiceHandler implements IService.Iface {
         ArrayList<String> the_result = row.toStringList();
         the_response.addToRowList(the_result);
       }
+      if(the_response.isSetRowList() == false) {
+        the_response.rowList = new ArrayList<>();
+      }
       for(String column_name: result.get(0).mColumnName) {
         the_response.addToColumnsList(column_name);
       }

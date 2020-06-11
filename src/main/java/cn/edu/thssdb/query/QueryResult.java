@@ -146,6 +146,7 @@ public class QueryResult {
       for (int i = 0; i < mMetaInfoList.size(); i++) {
         String current_name = mMetaInfoList.get(i).GetTableName();
         if (!current_name.equals(table_name)) {
+          total_index += mMetaInfoList.get(i).GetColumnSize();
           continue;
         }
   
@@ -155,7 +156,6 @@ public class QueryResult {
           index = current_index + total_index;
           break;
         }
-        total_index += mMetaInfoList.get(i).GetColumnSize();
       }
       if(whether_find == false) {
         throw new AttributeNotFoundException(column_name);
