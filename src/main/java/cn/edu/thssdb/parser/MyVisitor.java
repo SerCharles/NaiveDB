@@ -731,11 +731,11 @@ public class MyVisitor extends SQLBaseVisitor {
                 }
             }
             try {
-                QueryResult result = the_database.select(columns_selected, the_query_table, logic, distinct);
                 for (String table_name : table_names) {
                     Table the_table = the_database.get(table_name);
                     the_table.free_s_lock(session);
                 }
+                QueryResult result = the_database.select(columns_selected, the_query_table, logic, distinct);
                 return result;
             } catch (Exception e) {
                 QueryResult error_result = new QueryResult(e.toString());
