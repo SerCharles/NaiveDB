@@ -82,6 +82,12 @@ public class IServiceHandler implements IService.Iface {
     }
 
     String command_full = req.statement;
+    if(command_full == null || command_full.isEmpty()) {
+      the_response.setStatus(new Status(Global.SUCCESS_CODE));
+      the_response.addToColumnsList("Null instruction!");
+      return the_response;
+    }
+    
     String[] commands = command_full.split(";");
     ArrayList<QueryResult> result = new ArrayList<>();
   
